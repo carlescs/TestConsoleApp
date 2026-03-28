@@ -20,6 +20,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
     private const string InterfaceName = "IMenuCommand";
     private const string InterfaceNamespace = "TestConsoleApp.Application.Abstractions";
     private const string SubMenuAttributeName = "SubMenuAttribute";
+    private const string HotkeyAttributeName = "HotkeyAttribute";
     private const string SubMenuCommandNamespace = "TestConsoleApp.Presentation.Menus";
 
     /// <inheritdoc/>
@@ -85,10 +86,32 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
             }
         }
 
+        var hotkeyAttr = symbol.GetAttributes().FirstOrDefault(a =>
+            a.AttributeClass?.Name == HotkeyAttributeName &&
+            a.AttributeClass.ContainingNamespace.ToDisplayString() == InterfaceNamespace);
+
+        (char Key, System.ConsoleModifiers Modifiers)? hotkey = null;
+        if (hotkeyAttr != null && hotkeyAttr.ConstructorArguments.Length > 0)
+        {
+            var keyArg = hotkeyAttr.ConstructorArguments[0];
+            if (keyArg.Kind == TypedConstantKind.Primitive && keyArg.Value is char c)
+            {
+                var mods = (System.ConsoleModifiers)0;
+                if (hotkeyAttr.ConstructorArguments.Length > 1)
+                {
+                    var modArg = hotkeyAttr.ConstructorArguments[1];
+                    if (modArg.Kind == TypedConstantKind.Enum && modArg.Value is not null)
+                        mods = (System.ConsoleModifiers)System.Convert.ToInt32(modArg.Value);
+                }
+                hotkey = (c, mods);
+            }
+        }
+
         return new CommandModel(
             symbol.Name,
             symbol.ContainingNamespace.ToDisplayString(),
-            subMenuPath);
+            subMenuPath,
+            hotkey);
     }
 
     /// <summary>Emits the registration source file from the collected command models.</summary>
@@ -100,6 +123,8 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
             return;
 
         var hasGrouped = models.Any(m => !m.SubMenuPath.IsEmpty);
+        var modelsWithHotkeys = models.Where(m => m.Hotkey.HasValue).OrderBy(m => m.TypeName).ToList();
+        var hotkeyTypeNames = new HashSet<string>(modelsWithHotkeys.Select(m => m.TypeName));
 
         var root = new MenuTreeNode();
         foreach (var model in models)
@@ -124,6 +149,9 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
         sb.AppendLine("using System.Runtime.CompilerServices;");
         sb.AppendLine($"using {InterfaceNamespace};");
 
+        if (modelsWithHotkeys.Count > 0)
+            sb.AppendLine("using System;"); // ConsoleModifiers
+
         if (hasGrouped)
             sb.AppendLine($"using {SubMenuCommandNamespace};");
 
@@ -145,11 +173,32 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
         sb.AppendLine("    internal static void RegisterAll()");
         sb.AppendLine("    {");
 
+        // Variable declarations for commands that have hotkeys (needed to pass instances)
+        foreach (var model in modelsWithHotkeys)
+            sb.AppendLine($"        var {GetVarName(model.TypeName)} = new {model.TypeName}();");
+
+        if (modelsWithHotkeys.Count > 0)
+            sb.AppendLine();
+
+        // Register calls – use variables where available
         foreach (var typeName in root.CommandTypeNames.OrderBy(t => t))
-            sb.AppendLine($"        CommandRegistry.Register(new {typeName}());");
+        {
+            var expr = hotkeyTypeNames.Contains(typeName) ? GetVarName(typeName) : $"new {typeName}()";
+            sb.AppendLine($"        CommandRegistry.Register({expr});");
+        }
 
         foreach (var kvp in root.Children)
-            sb.AppendLine($"        CommandRegistry.Register({EmitSubMenuNode(kvp.Key, kvp.Value)});");
+            sb.AppendLine($"        CommandRegistry.Register({EmitSubMenuNode(kvp.Key, kvp.Value, hotkeyTypeNames)});");
+
+        // RegisterHotkey calls
+        if (modelsWithHotkeys.Count > 0)
+            sb.AppendLine();
+
+        foreach (var model in modelsWithHotkeys)
+        {
+            var (key, mods) = model.Hotkey!.Value;
+            sb.AppendLine($"        CommandRegistry.RegisterHotkey('{key}', {FormatModifiers(mods)}, {GetVarName(model.TypeName)});");
+        }
 
         sb.AppendLine("    }");
         sb.AppendLine("}");
@@ -164,14 +213,32 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
     /// <param name="name">The display name of this submenu level.</param>
     /// <param name="node">The tree node containing child commands and nested submenus.</param>
     /// <returns>A C# expression string for constructing the submenu.</returns>
-    private static string EmitSubMenuNode(string name, MenuTreeNode node)
+    private static string EmitSubMenuNode(string name, MenuTreeNode node, HashSet<string> hotkeyTypeNames)
     {
         var items = new List<string>();
         foreach (var typeName in node.CommandTypeNames.OrderBy(t => t))
-            items.Add($"new {typeName}()");
+        {
+            var expr = hotkeyTypeNames.Contains(typeName) ? GetVarName(typeName) : $"new {typeName}()";
+            items.Add(expr);
+        }
         foreach (var kvp in node.Children)
-            items.Add(EmitSubMenuNode(kvp.Key, kvp.Value));
+            items.Add(EmitSubMenuNode(kvp.Key, kvp.Value, hotkeyTypeNames));
         return $"new SubMenuCommand(\"{EscapeString(name)}\", [{string.Join(", ", items)}])";
+    }
+
+    /// <summary>Derives a camelCase local variable name from a type name (e.g. FooCommand → fooCommand).</summary>
+    private static string GetVarName(string typeName) =>
+        char.ToLowerInvariant(typeName[0]) + typeName.Substring(1);
+
+    /// <summary>Formats a <see cref="System.ConsoleModifiers"/> value as a C# expression.</summary>
+    private static string FormatModifiers(System.ConsoleModifiers modifiers)
+    {
+        if ((int)modifiers == 0) return "(ConsoleModifiers)0";
+        var parts = new List<string>();
+        if ((modifiers & System.ConsoleModifiers.Alt) != 0) parts.Add("ConsoleModifiers.Alt");
+        if ((modifiers & System.ConsoleModifiers.Shift) != 0) parts.Add("ConsoleModifiers.Shift");
+        if ((modifiers & System.ConsoleModifiers.Control) != 0) parts.Add("ConsoleModifiers.Control");
+        return string.Join(" | ", parts);
     }
 
     /// <summary>Escapes backslashes and double quotes for use inside a C# string literal.</summary>
@@ -181,7 +248,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
         value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     /// <summary>Holds the data extracted from a single command class declaration.</summary>
-    private readonly record struct CommandModel(string TypeName, string Namespace, ImmutableArray<string> SubMenuPath);
+    private readonly record struct CommandModel(string TypeName, string Namespace, ImmutableArray<string> SubMenuPath, (char Key, System.ConsoleModifiers Modifiers)? Hotkey);
 
     /// <summary>
     /// An internal tree node used to accumulate the nested submenu structure

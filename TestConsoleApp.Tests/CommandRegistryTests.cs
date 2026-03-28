@@ -8,6 +8,8 @@ public sealed class CommandRegistryTests : IDisposable
 {
     private readonly List<IMenuCommand> _commandsField;
     private readonly List<IMenuCommand> _backup;
+    private readonly Dictionary<Type, (char Key, ConsoleModifiers Modifiers)> _hotkeysField;
+    private readonly Dictionary<(char Key, ConsoleModifiers Modifiers), IMenuCommand> _globalHotkeysField;
 
     public CommandRegistryTests()
     {
@@ -16,12 +18,24 @@ public sealed class CommandRegistryTests : IDisposable
             .GetValue(null)!;
         _backup = [.._commandsField];
         _commandsField.Clear();
+
+        _hotkeysField = (Dictionary<Type, (char Key, ConsoleModifiers Modifiers)>)typeof(CommandRegistry)
+            .GetField("_hotkeys", BindingFlags.NonPublic | BindingFlags.Static)!
+            .GetValue(null)!;
+        _hotkeysField.Clear();
+
+        _globalHotkeysField = (Dictionary<(char Key, ConsoleModifiers Modifiers), IMenuCommand>)typeof(CommandRegistry)
+            .GetField("_globalHotkeys", BindingFlags.NonPublic | BindingFlags.Static)!
+            .GetValue(null)!;
+        _globalHotkeysField.Clear();
     }
 
     public void Dispose()
     {
         _commandsField.Clear();
         _commandsField.AddRange(_backup);
+        _hotkeysField.Clear();
+        _globalHotkeysField.Clear();
     }
 
     [Fact]
@@ -74,5 +88,94 @@ public sealed class CommandRegistryTests : IDisposable
     public void Commands_IsReadOnly()
     {
         Assert.IsAssignableFrom<IReadOnlyList<IMenuCommand>>(CommandRegistry.Commands);
+    }
+
+    [Fact]
+    public void GetHotkey_ReturnsNull_WhenNoHotkeyRegistered()
+    {
+        var command = Substitute.For<IMenuCommand>();
+
+        var result = CommandRegistry.GetHotkey(command);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void RegisterHotkey_StoresHotkey_RetrievableByGetHotkey()
+    {
+        var command = Substitute.For<IMenuCommand>();
+
+        CommandRegistry.RegisterHotkey('H', (ConsoleModifiers)0, command);
+
+        var result = CommandRegistry.GetHotkey(command);
+        Assert.NotNull(result);
+        Assert.Equal('H', result!.Value.Key);
+        Assert.Equal((ConsoleModifiers)0, result.Value.Modifiers);
+    }
+
+    [Fact]
+    public void RegisterHotkey_WithModifier_StoresModifier()
+    {
+        var command = Substitute.For<IMenuCommand>();
+
+        CommandRegistry.RegisterHotkey('H', ConsoleModifiers.Control, command);
+
+        var result = CommandRegistry.GetHotkey(command);
+        Assert.NotNull(result);
+        Assert.Equal(ConsoleModifiers.Control, result!.Value.Modifiers);
+    }
+
+    [Fact]
+    public void FindGlobalCommand_ReturnsNull_WhenNothingRegistered()
+    {
+        var keyInfo = new ConsoleKeyInfo('x', ConsoleKey.X, false, false, false);
+
+        var result = CommandRegistry.FindGlobalCommand(keyInfo);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void FindGlobalCommand_ReturnsCommand_OnExactMatch()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        CommandRegistry.RegisterHotkey('H', (ConsoleModifiers)0, command);
+
+        var result = CommandRegistry.FindGlobalCommand(new ConsoleKeyInfo('h', ConsoleKey.H, false, false, false));
+
+        Assert.Same(command, result);
+    }
+
+    [Fact]
+    public void FindGlobalCommand_IsCaseInsensitive()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        CommandRegistry.RegisterHotkey('h', (ConsoleModifiers)0, command);
+
+        var result = CommandRegistry.FindGlobalCommand(new ConsoleKeyInfo('H', ConsoleKey.H, true, false, false));
+
+        Assert.Same(command, result);
+    }
+
+    [Fact]
+    public void FindGlobalCommand_MatchesCtrlHotkey()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        CommandRegistry.RegisterHotkey('H', ConsoleModifiers.Control, command);
+
+        var result = CommandRegistry.FindGlobalCommand(new ConsoleKeyInfo('\x08', ConsoleKey.H, false, false, true));
+
+        Assert.Same(command, result);
+    }
+
+    [Fact]
+    public void FindGlobalCommand_ReturnsNull_WhenModifierDiffers()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        CommandRegistry.RegisterHotkey('H', ConsoleModifiers.Control, command);
+
+        var result = CommandRegistry.FindGlobalCommand(new ConsoleKeyInfo('h', ConsoleKey.H, false, false, false));
+
+        Assert.Null(result);
     }
 }

@@ -23,25 +23,11 @@ public sealed class MainMenu(IEnumerable<IMenuCommand> commands)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            AnsiConsole.Clear();
-            AnsiConsole.Write(new FigletText("TestConsoleApp").Centered().Color(Color.Blue));
-            AnsiConsole.Write(new Rule().RuleStyle("blue dim"));
-
-            var choices = _commands
-                .Select(c => c.Title)
-                .Append(ExitOption)
-                .ToList();
-
-            var selection = AnsiConsole.Prompt(
-                new SelectionPrompt<string>()
-                    .Title("[bold]Main Menu[/]")
-                    .PageSize(10)
-                    .AddChoices(choices));
-
-            if (selection == ExitOption)
+            var command = MenuInteraction.Show("Main Menu", _commands, ExitOption,
+                static () => AnsiConsole.Write(new FigletText("TestConsoleApp").Centered().Color(Color.Blue)));
+            if (command is null)
                 break;
 
-            var command = _commands.First(c => c.Title == selection);
             await command.ExecuteAsync(cancellationToken);
         }
     }

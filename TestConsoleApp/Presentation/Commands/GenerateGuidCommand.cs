@@ -7,6 +7,7 @@ namespace TestConsoleApp.Presentation.Commands;
 /// A menu command in the <c>Utilities</c> submenu that generates and displays a new <see cref="Guid"/>.
 /// </summary>
 [SubMenu("Utilities")]
+[Hotkey('G')]
 public sealed class GenerateGuidCommand : IMenuCommand
 {
     /// <inheritdoc/>

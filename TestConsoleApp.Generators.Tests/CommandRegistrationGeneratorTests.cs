@@ -22,9 +22,18 @@ public sealed class CommandRegistrationGeneratorTests
                 public string[] Path { get; }
             }
 
+            [System.AttributeUsage(System.AttributeTargets.Class)]
+            public sealed class HotkeyAttribute : System.Attribute
+            {
+                public HotkeyAttribute(char key, System.ConsoleModifiers modifiers = default) { }
+                public char Key { get; }
+                public System.ConsoleModifiers Modifiers { get; }
+            }
+
             public static class CommandRegistry
             {
                 public static void Register(IMenuCommand command) { }
+                public static void RegisterHotkey(char key, System.ConsoleModifiers modifiers, IMenuCommand command) { }
             }
         }
 
@@ -503,6 +512,206 @@ public sealed class CommandRegistrationGeneratorTests
         Assert.True(posA < posB && posB < posC, "A should wrap B which wraps C");
     }
 
+
+    [Fact]
+    public void GeneratesHotkeyRegistration_ForCommandWithHotkeyAttribute()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [Hotkey('F')]
+                public sealed class FooCommand : IMenuCommand
+                {
+                    public string Title => "Foo";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.Contains("var fooCommand = new FooCommand();", text);
+        Assert.Contains("CommandRegistry.RegisterHotkey('F', (ConsoleModifiers)0, fooCommand);", text);
+    }
+
+    [Fact]
+    public void DoesNotGenerateHotkeyRegistration_ForCommandWithoutHotkeyAttribute()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                public sealed class FooCommand : IMenuCommand
+                {
+                    public string Title => "Foo";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        Assert.DoesNotContain("RegisterHotkey", sources[0].SourceText.ToString());
+    }
+
+    [Fact]
+    public void HotkeyRegistration_AppearsAfterCommandRegistration()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [Hotkey('F')]
+                public sealed class FooCommand : IMenuCommand
+                {
+                    public string Title => "Foo";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.True(
+            text.IndexOf("CommandRegistry.Register(", StringComparison.Ordinal) <
+            text.IndexOf("CommandRegistry.RegisterHotkey(", StringComparison.Ordinal),
+            "Register calls should precede RegisterHotkey calls");
+    }
+
+    [Fact]
+    public void GeneratesHotkeyRegistration_ForSubMenuCommand_WithHotkeyAttribute()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [SubMenu("Tools")]
+                [Hotkey('T')]
+                public sealed class ToolCommand : IMenuCommand
+                {
+                    public string Title => "Tool";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.Contains("var toolCommand = new ToolCommand();", text);
+        Assert.Contains("CommandRegistry.RegisterHotkey('T', (ConsoleModifiers)0, toolCommand);", text);
+    }
+
+    [Fact]
+    public void GeneratesHotkeyRegistrations_ForMultipleCommandsWithHotkeys()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [Hotkey('A')]
+                public sealed class AlphaCommand : IMenuCommand
+                {
+                    public string Title => "Alpha";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+                [Hotkey('Z')]
+                public sealed class ZebraCommand : IMenuCommand
+                {
+                    public string Title => "Zebra";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.Contains("var alphaCommand = new AlphaCommand();", text);
+        Assert.Contains("var zebraCommand = new ZebraCommand();", text);
+        Assert.Contains("CommandRegistry.RegisterHotkey('A', (ConsoleModifiers)0, alphaCommand);", text);
+        Assert.Contains("CommandRegistry.RegisterHotkey('Z', (ConsoleModifiers)0, zebraCommand);", text);
+    }
+
+    [Fact]
+    public void GeneratesHotkeyRegistration_WithControlModifier()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [Hotkey('F', System.ConsoleModifiers.Control)]
+                public sealed class FooCommand : IMenuCommand
+                {
+                    public string Title => "Foo";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.Contains("CommandRegistry.RegisterHotkey('F', ConsoleModifiers.Control, fooCommand);", text);
+    }
+
+    [Fact]
+    public void GeneratesVariableDeclaration_BeforeRegisterCall_ForHotkeyCommand()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [Hotkey('F')]
+                public sealed class FooCommand : IMenuCommand
+                {
+                    public string Title => "Foo";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.True(
+            text.IndexOf("var fooCommand = new FooCommand();", StringComparison.Ordinal) <
+            text.IndexOf("CommandRegistry.Register(fooCommand);", StringComparison.Ordinal),
+            "Variable declaration should precede Register call");
+    }
+
+    [Fact]
+    public void GeneratedSource_IncludesSystemUsing_WhenHotkeysExist()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [Hotkey('F')]
+                public sealed class FooCommand : IMenuCommand
+                {
+                    public string Title => "Foo";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        Assert.Contains("using System;", sources[0].SourceText.ToString());
+    }
     private static int CountOccurrences(string text, string pattern)
     {
         var count = 0;
