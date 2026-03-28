@@ -1,5 +1,6 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+# Build, test, and publish the TestConsoleApp .NET tool to GitHub Packages.
+# Versioning is handled automatically by MinVer using git tags (no CI commits needed).
+# To cut a release, push a tag: git tag v1.2.3 && git push --tags
 
 name: .NET
 
@@ -9,20 +10,41 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Required for MinVer to walk git history and find version tags
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
+
     - name: Restore dependencies
       run: dotnet restore
+
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --no-restore -c Release
+
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --no-build --verbosity normal -c Release
+
+    - name: Pack
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: dotnet pack TestConsoleApp/TestConsoleApp.csproj --no-restore -c Release -o ./artifacts
+
+    - name: Push to GitHub Packages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: >
+        dotnet nuget push ./artifacts/*.nupkg
+        --source "https://nuget.pkg.github.com/carlescs/index.json"
+        --api-key ${{ secrets.GITHUB_TOKEN }}
+        --skip-duplicate

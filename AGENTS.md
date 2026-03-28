@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-`TestConsoleApp` is a .NET 10 console application that presents an interactive menu driven by [Spectre.Console](https://spectreconsole.net/). Commands are discovered and registered automatically at startup via a Roslyn incremental source generator (`.NET Standard 2.0`).
+`TestConsoleApp` is a .NET 10 **global dotnet tool** that presents an interactive menu driven by [Spectre.Console](https://spectreconsole.net/). It also exposes every command directly via [Spectre.Console.Cli](https://spectreconsole.net/cli) so it can be scripted without the interactive UI. Commands are discovered and registered automatically at startup via a Roslyn incremental source generator (`.NET Standard 2.0`). Versioning is handled by [MinVer](https://github.com/adamralph/minver) — no pipeline commits required.
 
 ### Projects
 
@@ -19,13 +19,15 @@
 
 ```
 TestConsoleApp/
-├── Program.cs                         # Entry point — wires CommandRegistry into MainMenu
+├── Program.cs                         # Entry point — menu (no args) or CLI routing (args present)
 ├── Application/
 │   └── Abstractions/
 │       ├── IMenuCommand.cs            # Command contract (Title + ExecuteAsync)
 │       ├── CommandRegistry.cs         # Runtime list of registered commands
 │       └── SubMenuAttribute.cs        # [SubMenu("Name")] — groups commands under a submenu
 └── Presentation/
+    ├── Cli/
+    │   └── CliCommandBuilder.cs       # Maps IMenuCommand tree → Spectre.Console.Cli CommandApp
     ├── Menus/
     │   ├── MainMenu.cs                # Spectre.Console interactive selection loop
     │   └── SubMenuCommand.cs          # IMenuCommand that renders a nested selection loop
@@ -103,6 +105,46 @@ public sealed class MyUtilityCommand : IMenuCommand
 ```
 
 > **Note:** Classes that implement `IMenuCommand` but lack a `public` parameterless constructor (e.g., `SubMenuCommand` itself) are automatically excluded from registration.
+
+---
+
+## CLI Direct Access
+
+When the tool is invoked with arguments, `Program.cs` hands control to a `Spectre.Console.Cli` `CommandApp` instead of showing the interactive menu. `CliCommandBuilder` walks `CommandRegistry.Commands` and registers each `IMenuCommand` as a kebab-case CLI command (e.g., `"Say Hello"` → `say-hello`). Sub-menus become CLI branches.
+
+```
+# Interactive menu (no args)
+testconsoleapp
+
+# Direct command access
+testconsoleapp say-hello
+testconsoleapp utilities show-date-time
+testconsoleapp utilities generate-guid
+
+# Built-in help
+testconsoleapp --help
+testconsoleapp utilities --help
+```
+
+---
+
+## Versioning
+
+Versioning is fully automated via **MinVer** — no pipeline commits required.
+
+- MinVer reads the nearest reachable git tag of the form `v<major>.<minor>.<patch>` and computes the version from commit height.
+- Without a tag, the version is `1.0.0-alpha.0.<height>` (controlled by `MinVerMinimumMajorMinor=1.0` in the csproj).
+- To release a stable version, push a tag: `git tag v1.2.3 && git push --tags`. The next CI run will publish `1.2.3`.
+- The pipeline (`dotnet.yml`) uses `fetch-depth: 0` so MinVer can walk the full tag history.
+
+---
+
+## Publishing
+
+Packages are published to the **GitHub Packages NuGet registry** on every push to `main`.
+
+- The tool can be installed globally: `dotnet tool install --global TestConsoleApp --add-source https://nuget.pkg.github.com/carlescs/index.json`
+- `--skip-duplicate` is used in the push step so re-running the workflow for the same version is safe.
 
 ---
 

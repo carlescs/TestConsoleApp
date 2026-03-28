@@ -8,6 +8,7 @@ public sealed class SubMenuCommand(string title, IReadOnlyList<IMenuCommand> com
     private const string BackOption = "Back";
 
     public string Title => title;
+    public IReadOnlyList<IMenuCommand> ChildCommands => commands;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
