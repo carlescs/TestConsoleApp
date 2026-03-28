@@ -23,22 +23,30 @@ TestConsoleApp/
 ├── Application/
 │   └── Abstractions/
 │       ├── IMenuCommand.cs            # Command contract (Title + ExecuteAsync)
-│       └── CommandRegistry.cs        # Runtime list of registered commands
+│       ├── CommandRegistry.cs         # Runtime list of registered commands
+│       └── SubMenuAttribute.cs        # [SubMenu("Name")] — groups commands under a submenu
 └── Presentation/
     ├── Menus/
-    │   └── MainMenu.cs                # Spectre.Console interactive selection loop
+    │   ├── MainMenu.cs                # Spectre.Console interactive selection loop
+    │   └── SubMenuCommand.cs          # IMenuCommand that renders a nested selection loop
     └── Commands/
-        └── SayHelloCommand.cs         # Example command implementation
+        ├── SayHelloCommand.cs         # Standalone command example
+        ├── ShowDateTimeCommand.cs     # Submenu command example ([SubMenu("Utilities")])
+        └── GenerateGuidCommand.cs     # Submenu command example ([SubMenu("Utilities")])
 
 TestConsoleApp.Generators/
-└── CommandRegistrationGenerator.cs   # IIncrementalGenerator — emits CommandRegistrationInitializer.g.cs
+├── CommandRegistrationGenerator.cs   # IIncrementalGenerator — emits CommandRegistrationInitializer.g.cs
+└── IsExternalInit.cs                  # netstandard2.0 polyfill for record struct support
 ```
 
 ### Auto-Registration Flow
 
-1. `CommandRegistrationGenerator` scans the compilation for every non-abstract class that implements `IMenuCommand`.
-2. It emits `CommandRegistrationInitializer.g.cs` (in `TestConsoleApp.Generated`) containing a `[ModuleInitializer]` method that calls `CommandRegistry.Register(new TCommand())` for each discovered type.
-3. At runtime, the module initializer fires before `Program.cs`, so `CommandRegistry.Commands` is already populated when `MainMenu` is constructed.
+1. `CommandRegistrationGenerator` scans the compilation for every non-abstract class that:
+   - implements `IMenuCommand`, and
+   - has a `public` parameterless constructor.
+2. Commands **without** `[SubMenu]` are emitted as `CommandRegistry.Register(new TCommand())`.
+3. Commands **with** `[SubMenu("Group")]` are grouped by name and emitted as a single `CommandRegistry.Register(new SubMenuCommand("Group", [new T1(), new T2()]))` per group.
+4. The emitted `CommandRegistrationInitializer.g.cs` uses `[ModuleInitializer]` so all registrations happen before `Program.cs` executes.
 
 ---
 
@@ -68,6 +76,33 @@ public sealed class MyNewCommand : IMenuCommand
     }
 }
 ```
+
+---
+
+## Adding a Submenu
+
+Decorate any `IMenuCommand` class with `[SubMenu("Group Name")]` to place it inside a named submenu instead of the root menu. All commands sharing the same group name are collected into one `SubMenuCommand` entry automatically on the next build.
+
+```csharp
+using Spectre.Console;
+using TestConsoleApp.Application.Abstractions;
+
+namespace TestConsoleApp.Presentation.Commands;
+
+[SubMenu("Utilities")]
+public sealed class MyUtilityCommand : IMenuCommand
+{
+    public string Title => "My Utility";
+
+    public Task ExecuteAsync(CancellationToken cancellationToken = default)
+    {
+        AnsiConsole.MarkupLine("[green]Running utility...[/]");
+        return Task.CompletedTask;
+    }
+}
+```
+
+> **Note:** Classes that implement `IMenuCommand` but lack a `public` parameterless constructor (e.g., `SubMenuCommand` itself) are automatically excluded from registration.
 
 ---
 
@@ -101,3 +136,4 @@ dotnet run --project TestConsoleApp/TestConsoleApp.csproj
 |---|---|---|
 | `Spectre.Console` | `TestConsoleApp` | Rich terminal UI (menus, prompts, markup) |
 | `Microsoft.CodeAnalysis.CSharp` | `TestConsoleApp.Generators` | Roslyn APIs for the source generator |
+| *(polyfill)* `IsExternalInit` | `TestConsoleApp.Generators` | Enables `record struct` on netstandard2.0 |
