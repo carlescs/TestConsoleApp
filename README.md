@@ -1,7 +1,7 @@
 # 🖥️ TestConsoleApp
 
 [![.NET](https://github.com/carlescs/TestConsoleApp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/carlescs/TestConsoleApp/actions/workflows/dotnet.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.txt)
 
 A **.NET 10 global dotnet tool** that presents a rich interactive menu powered by [Spectre.Console](https://spectreconsole.net/). Every command is also accessible directly from the command line via [Spectre.Console.Cli](https://spectreconsole.net/cli), so the tool works equally well interactively or in scripts. Commands are discovered and registered **automatically** at startup through a Roslyn incremental source generator — no manual wiring needed.
 
@@ -211,4 +211,4 @@ The CI pipeline (`.github/workflows/dotnet.yml`) builds, tests, packs, and pushe
 
 ## 📜 License
 
-This project is licensed under the [MIT License](LICENSE.txt).
+This project is licensed under the [GNU General Public License v3.0](LICENSE.txt).
