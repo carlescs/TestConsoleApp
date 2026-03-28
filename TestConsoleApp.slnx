@@ -1,4 +1,6 @@
 <Solution>
   <Project Path="TestConsoleApp/TestConsoleApp.csproj" />
   <Project Path="TestConsoleApp.Generators/TestConsoleApp.Generators.csproj" />
+  <Project Path="TestConsoleApp.Tests/TestConsoleApp.Tests.csproj" />
+  <Project Path="TestConsoleApp.Generators.Tests/TestConsoleApp.Generators.Tests.csproj" />
 </Solution>
