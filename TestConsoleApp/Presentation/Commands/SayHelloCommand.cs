@@ -3,10 +3,15 @@ using TestConsoleApp.Application.Abstractions;
 
 namespace TestConsoleApp.Presentation.Commands;
 
+/// <summary>
+/// A root-level menu command that prompts the user for their name and prints a personalised greeting.
+/// </summary>
 public sealed class SayHelloCommand : IMenuCommand
 {
+    /// <inheritdoc/>
     public string Title => "Say Hello";
 
+    /// <inheritdoc/>
     public Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
         AnsiConsole.Clear();

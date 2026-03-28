@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace TestConsoleApp.Generators.Tests;
@@ -19,8 +18,8 @@ public sealed class CommandRegistrationGeneratorTests
             [System.AttributeUsage(System.AttributeTargets.Class)]
             public sealed class SubMenuAttribute : System.Attribute
             {
-                public SubMenuAttribute(string name) { }
-                public string Name { get; }
+                public SubMenuAttribute(params string[] path) { }
+                public string[] Path { get; }
             }
 
             public static class CommandRegistry
@@ -54,8 +53,7 @@ public sealed class CommandRegistrationGeneratorTests
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            new ISourceGenerator[] { new CommandRegistrationGenerator().AsSourceGenerator() });
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new CommandRegistrationGenerator().AsSourceGenerator());
         driver = driver.RunGenerators(compilation);
 
         var result = driver.GetRunResult().Results[0];
@@ -411,6 +409,98 @@ public sealed class CommandRegistrationGeneratorTests
         var (diagnostics, _) = RunGenerator(source);
 
         Assert.Empty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+    }
+
+    [Fact]
+    public void GeneratesNestedSubMenuCommand_ForTwoLevelPath()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [SubMenu("Level1", "Level2")]
+                public sealed class DeepCommand : IMenuCommand
+                {
+                    public string Title => "Deep";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.Contains("new SubMenuCommand(\"Level1\"", text);
+        Assert.Contains("new SubMenuCommand(\"Level2\"", text);
+        Assert.Contains("new DeepCommand()", text);
+        Assert.True(
+            text.IndexOf("new SubMenuCommand(\"Level1\"", StringComparison.Ordinal) <
+            text.IndexOf("new SubMenuCommand(\"Level2\"", StringComparison.Ordinal),
+            "Level1 should wrap Level2");
+    }
+
+    [Fact]
+    public void GeneratesMixedDepth_CommandsAtDifferentLevels()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [SubMenu("Tools")]
+                public sealed class FlatToolCommand : IMenuCommand
+                {
+                    public string Title => "Flat";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+                [SubMenu("Tools", "Advanced")]
+                public sealed class AdvancedToolCommand : IMenuCommand
+                {
+                    public string Title => "Advanced";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.Equal(1, CountOccurrences(text, "new SubMenuCommand(\"Tools\""));
+        Assert.Contains("new SubMenuCommand(\"Advanced\"", text);
+        Assert.Contains("new FlatToolCommand()", text);
+        Assert.Contains("new AdvancedToolCommand()", text);
+    }
+
+    [Fact]
+    public void GeneratesThreeLevelNesting()
+    {
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                [SubMenu("A", "B", "C")]
+                public sealed class DeepCommand : IMenuCommand
+                {
+                    public string Title => "Deep";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        var text = sources[0].SourceText.ToString();
+        Assert.Contains("new SubMenuCommand(\"A\"", text);
+        Assert.Contains("new SubMenuCommand(\"B\"", text);
+        Assert.Contains("new SubMenuCommand(\"C\"", text);
+        Assert.Contains("new DeepCommand()", text);
+        var posA = text.IndexOf("new SubMenuCommand(\"A\"", StringComparison.Ordinal);
+        var posB = text.IndexOf("new SubMenuCommand(\"B\"", StringComparison.Ordinal);
+        var posC = text.IndexOf("new SubMenuCommand(\"C\"", StringComparison.Ordinal);
+        Assert.True(posA < posB && posB < posC, "A should wrap B which wraps C");
     }
 
     private static int CountOccurrences(string text, string pattern)
