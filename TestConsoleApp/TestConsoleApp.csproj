@@ -11,6 +11,7 @@
     <Description>An interactive .NET console tool with Spectre.Console menus and direct CLI command access.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/carlescs/TestConsoleApp</RepositoryUrl>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
   </PropertyGroup>
 
