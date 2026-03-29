@@ -40,6 +40,11 @@ jobs:
         id: latest_tag
         run: |
           LATEST_TAG=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "")
+          # Discard any tag that does not strictly follow vMAJOR.MINOR.PATCH
+          if [ -n "${LATEST_TAG}" ] && ! echo "${LATEST_TAG}" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Latest tag '${LATEST_TAG}' does not follow vMAJOR.MINOR.PATCH; ignoring it for version calculation."
+            LATEST_TAG=""
+          fi
           echo "tag=${LATEST_TAG}" >> "$GITHUB_OUTPUT"
           if [ -z "${LATEST_TAG}" ]; then
             echo "No existing tag found — will start from v1.0.0"
@@ -53,40 +58,48 @@ jobs:
           MANUAL_BUMP="${{ inputs.bump }}"
           LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
 
-          # Honor a manual override
+          # Collect SHA list of commits since the last tag
+          if [ -z "${LATEST_TAG}" ]; then
+            COMMITS_LIST=$(git log --format="%H" HEAD)
+          else
+            COMMITS_LIST=$(git log --format="%H" "${LATEST_TAG}..HEAD")
+          fi
+
+          # Skip (even for manual bumps) when there are no commits since the last tag
+          if [ -z "${COMMITS_LIST}" ]; then
+            echo "No commits since last tag — nothing to version."
+            echo "type=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Honor a manual override (only after confirming there are commits to release)
           if [ "${MANUAL_BUMP}" != "auto" ] && [ -n "${MANUAL_BUMP}" ]; then
             echo "type=${MANUAL_BUMP}" >> "$GITHUB_OUTPUT"
             echo "Using manual bump: ${MANUAL_BUMP}"
             exit 0
           fi
 
-          # Collect commit subjects (and footers) since the last tag
-          if [ -z "${LATEST_TAG}" ]; then
-            COMMITS=$(git log --pretty=format:"%B" HEAD)
-          else
-            COMMITS=$(git log --pretty=format:"%B" "${LATEST_TAG}..HEAD")
-          fi
-
-          if [ -z "${COMMITS}" ]; then
-            echo "No commits since last tag — nothing to version."
-            echo "type=none" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           BUMP="patch"
 
-          while IFS= read -r line; do
-            # Breaking change: footer token (BREAKING CHANGE: or BREAKING-CHANGE:) or
-            # exclamation-mark type anywhere in the subject (e.g. feat!:, feat(scope)!:)
-            if echo "${line}" | grep -qE '(BREAKING[- ]CHANGE:|^[a-zA-Z]+(\([^)]*\))?!:)'; then
+          while IFS= read -r sha; do
+            SUBJECT=$(git log -1 --format="%s" "${sha}")
+            BODY=$(git log -1 --format="%b" "${sha}")
+
+            # Breaking change: exclamation-mark type in subject (e.g. feat!:, feat(scope)!:)
+            if echo "${SUBJECT}" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:'; then
               BUMP="major"
               break
             fi
-            # New feature
-            if echo "${line}" | grep -qE '^feat(\([^)]*\))?:'; then
+            # Breaking change: BREAKING CHANGE or BREAKING-CHANGE token anywhere in commit body/footer
+            if echo "${BODY}" | grep -qE 'BREAKING[- ]CHANGE:'; then
+              BUMP="major"
+              break
+            fi
+            # New feature in subject
+            if echo "${SUBJECT}" | grep -qE '^feat(\([^)]*\))?:'; then
               BUMP="minor"
             fi
-          done <<< "${COMMITS}"
+          done <<< "${COMMITS_LIST}"
 
           echo "type=${BUMP}" >> "$GITHUB_OUTPUT"
           echo "Detected bump type: ${BUMP}"
@@ -104,7 +117,7 @@ jobs:
           LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
 
           if [ -z "${LATEST_TAG}" ]; then
-            CURRENT="1.0.0"
+            CURRENT="0.0.0"
           else
             CURRENT="${LATEST_TAG#v}"
           fi
@@ -133,11 +146,19 @@ jobs:
       - name: Create and push tag
         if: steps.version.outputs.version != ''
         run: |
+          NEW_TAG="${{ steps.version.outputs.version }}"
+
+          # Guard against re-runs or concurrent dispatches computing the same tag
+          if git rev-parse --verify "refs/tags/${NEW_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${NEW_TAG} already exists — skipping creation and push."
+            exit 0
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.version.outputs.version }}"
-          git push origin "${{ steps.version.outputs.version }}"
-          echo "✅ Created and pushed tag: ${{ steps.version.outputs.version }}"
+          git tag "${NEW_TAG}"
+          git push origin "${NEW_TAG}"
+          echo "✅ Created and pushed tag: ${NEW_TAG}"
 
       - name: Summary
         if: always()
