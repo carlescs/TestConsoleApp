@@ -53,6 +53,42 @@ jobs:
             echo "Latest tag: ${LATEST_TAG}"
           fi
 
+      - name: Detect branch and compute dev suffix
+        id: branch
+        run: |
+          BRANCH_NAME="${GITHUB_REF_NAME}"
+          if [ "${BRANCH_NAME}" = "main" ]; then
+            echo "is_main=true" >> "$GITHUB_OUTPUT"
+            echo "suffix=" >> "$GITHUB_OUTPUT"
+            echo "Running on main — will create a stable tag."
+          else
+            # Sanitize branch name for use as a semver pre-release identifier:
+            # replace / and _ with -, strip any remaining non-alphanumeric/hyphen chars,
+            # lowercase, cap at 30 characters, then trim leading/trailing hyphens.
+            # Trim leading/trailing hyphens last; the fallback handles the
+            # edge case where the result is empty (e.g. a branch named "---").
+            SANITIZED=$(echo "${BRANCH_NAME}" \
+              | tr '/' '-' | tr '_' '-' \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed 's/[^a-z0-9-]//g' \
+              | cut -c1-30 \
+              | sed 's/^-*//;s/-*$//')
+            [ -z "${SANITIZED}" ] && SANITIZED="dev"
+
+            # Re-read the stable tag output to count commits for the height component.
+            LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+            if [ -z "${LATEST_TAG}" ]; then
+              HEIGHT=$(git rev-list --count HEAD)
+            else
+              HEIGHT=$(git rev-list --count "${LATEST_TAG}..HEAD")
+            fi
+
+            SUFFIX="-dev.${SANITIZED}.${HEIGHT}"
+            echo "is_main=false" >> "$GITHUB_OUTPUT"
+            echo "suffix=${SUFFIX}" >> "$GITHUB_OUTPUT"
+            echo "Running on '${BRANCH_NAME}' — will create a development tag with suffix: ${SUFFIX}"
+          fi
+
       - name: Detect bump type from commits
         id: bump
         run: |
@@ -140,7 +176,8 @@ jobs:
               ;;
           esac
 
-          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          DEV_SUFFIX="${{ steps.branch.outputs.suffix }}"
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}${DEV_SUFFIX}"
           echo "version=${NEW_TAG}" >> "$GITHUB_OUTPUT"
           echo "New version tag: ${NEW_TAG}"
 
@@ -180,10 +217,16 @@ jobs:
             echo "### ℹ️ No new tag created" >> "$GITHUB_STEP_SUMMARY"
             echo "There were no commits since the last tag." >> "$GITHUB_STEP_SUMMARY"
           elif [ -n "${NEW_TAG}" ]; then
-            echo "### 🚀 New tag created: \`${NEW_TAG}\`" >> "$GITHUB_STEP_SUMMARY"
+            IS_MAIN="${{ steps.branch.outputs.is_main }}"
+            if [ "${IS_MAIN}" = "true" ]; then
+              echo "### 🚀 New tag created: \`${NEW_TAG}\`" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "### 🛠️ New development tag created: \`${NEW_TAG}\`" >> "$GITHUB_STEP_SUMMARY"
+            fi
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
             echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Branch | \`${GITHUB_REF_NAME}\` |" >> "$GITHUB_STEP_SUMMARY"
             echo "| Previous tag | \`${{ steps.latest_tag.outputs.tag }}\` |" >> "$GITHUB_STEP_SUMMARY"
             echo "| New tag | \`${NEW_TAG}\` |" >> "$GITHUB_STEP_SUMMARY"
             echo "| Bump type | \`${BUMP_TYPE}\` |" >> "$GITHUB_STEP_SUMMARY"
