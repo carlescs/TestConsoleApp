@@ -16,8 +16,8 @@ internal static class MenuInteraction
         Action? banner = null)
     {
         var hotkeys = commands.Select(CommandRegistry.GetHotkey).ToArray();
-        var selectedIndex = 0;
-        var totalItems = commands.Count + 1;
+        int selectedIndex = 0;
+        int totalItems = commands.Count + 1;
 
         while (true)
         {
@@ -31,7 +31,7 @@ internal static class MenuInteraction
             if (keyInfo.Key == ConsoleKey.F1 || keyInfo.KeyChar == '?') { HelpRenderer.Show(); continue; }
 
             // Local hotkey dispatch
-            for (var i = 0; i < hotkeys.Length; i++)
+            for (int i = 0; i < hotkeys.Length; i++)
                 if (hotkeys[i].HasValue && HotkeyMatches(keyInfo, hotkeys[i]!.Value.Key, hotkeys[i]!.Value.Modifiers))
                     return commands[i];
 
@@ -59,23 +59,23 @@ internal static class MenuInteraction
         banner?.Invoke();
         AnsiConsole.Write(new Rule($"[bold]{Markup.Escape(header)}[/]").RuleStyle("blue dim"));
 
-        for (var i = 0; i < commands.Count; i++)
+        for (int i = 0; i < commands.Count; i++)
         {
             var hk = hotkeys[i];
-            var badgeMarkup = hk.HasValue ? BuildBadgeMarkup(hk.Value.Key, hk.Value.Modifiers) : new string(' ', BadgeColumnWidth);
-            var title = Markup.Escape(commands[i].Title);
-            var isSelected = i == selectedIndex;
+            string badgeMarkup = hk.HasValue ? BuildBadgeMarkup(hk.Value.Key, hk.Value.Modifiers) : new string(' ', BadgeColumnWidth);
+            string title = Markup.Escape(commands[i].Title);
+            bool isSelected = i == selectedIndex;
             AnsiConsole.MarkupLine(isSelected ? $" [bold]>[/] {badgeMarkup} [bold]{title}[/]" : $"   {badgeMarkup} {title}");
         }
 
-        var exitSelected = selectedIndex == commands.Count;
-        var exitPad = new string(' ', BadgeColumnWidth);
+        bool exitSelected = selectedIndex == commands.Count;
+        string exitPad = new string(' ', BadgeColumnWidth);
         AnsiConsole.MarkupLine(exitSelected
             ? $" [bold]>[/] {exitPad} [bold]{Markup.Escape(exitLabel)}[/]"
             : $"   {exitPad} {Markup.Escape(exitLabel)}");
 
         AnsiConsole.WriteLine();
-        var description = selectedIndex < commands.Count
+        string? description = selectedIndex < commands.Count
             ? CommandRegistry.GetDescription(commands[selectedIndex])
             : null;
         if (description is not null)
@@ -85,8 +85,8 @@ internal static class MenuInteraction
 
     internal static string BuildBadgeMarkup(char key, ConsoleModifiers modifiers)
     {
-        var content = BuildBadgeContent(modifiers, key);
-        var padding = new string(' ', BadgeColumnWidth - content.Length - 2);
+        string content = BuildBadgeContent(modifiers, key);
+        string padding = new string(' ', BadgeColumnWidth - content.Length - 2);
         return $"[[[bold cyan]{Markup.Escape(content)}[/]]]{padding}";
     }
 

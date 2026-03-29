@@ -70,7 +70,7 @@ public static class CommandRegistry
     private static (char Key, ConsoleModifiers Modifiers) NormaliseKeyInfo(ConsoleKeyInfo ki)
     {
         var mods = ki.Modifiers & ~ConsoleModifiers.Shift;
-        var ch = (mods & (ConsoleModifiers.Control | ConsoleModifiers.Alt)) != 0
+        char ch = (mods & (ConsoleModifiers.Control | ConsoleModifiers.Alt)) != 0
             ? char.ToUpperInvariant((char)ki.Key)
             : char.ToUpperInvariant(ki.KeyChar);
         return (ch, mods);

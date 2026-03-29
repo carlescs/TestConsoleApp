@@ -1,3 +1,4 @@
+using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
@@ -47,21 +48,19 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
     /// </returns>
     private static CommandModel? GetCommandModel(GeneratorSyntaxContext context)
     {
-        var symbol = context.SemanticModel.GetDeclaredSymbol(context.Node) as INamedTypeSymbol;
-
-        if (symbol is null || symbol.IsAbstract || symbol.IsGenericType)
+        if (context.SemanticModel.GetDeclaredSymbol(context.Node) is not INamedTypeSymbol symbol || symbol.IsAbstract || symbol.IsGenericType)
             return null;
 
-        var implementsInterface = symbol.AllInterfaces.Any(i =>
+        bool implementsInterface = symbol.AllInterfaces.Any(i =>
             i.Name == InterfaceName &&
             i.ContainingNamespace.ToDisplayString() == InterfaceNamespace);
 
         if (!implementsInterface)
             return null;
 
-        var hasParameterlessConstructor = symbol.InstanceConstructors.Any(c =>
-            (c.Parameters.IsEmpty || c.Parameters.All(p => p.HasExplicitDefaultValue)) &&
-            c.DeclaredAccessibility == Accessibility.Public);
+        bool hasParameterlessConstructor = symbol.InstanceConstructors.Any(contructor =>
+            (contructor.Parameters.IsEmpty || contructor.Parameters.All(p => p.HasExplicitDefaultValue)) &&
+            contructor.DeclaredAccessibility == Accessibility.Public);
 
         if (!hasParameterlessConstructor)
             return null;
@@ -71,7 +70,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
             a.AttributeClass.ContainingNamespace.ToDisplayString() == InterfaceNamespace);
 
         var subMenuPath = ImmutableArray<string>.Empty;
-        if (subMenuAttr != null && subMenuAttr.ConstructorArguments.Length > 0)
+        if (subMenuAttr is { ConstructorArguments.Length: > 0 })
         {
             var arg = subMenuAttr.ConstructorArguments[0];
             if (arg.Kind == TypedConstantKind.Array)
@@ -79,7 +78,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
                 var builder = ImmutableArray.CreateBuilder<string>();
                 foreach (var v in arg.Values)
                 {
-                    if (v.Value is string s && s.Length > 0)
+                    if (v.Value is string { Length: > 0 } s)
                         builder.Add(s);
                 }
                 subMenuPath = builder.ToImmutable();
@@ -90,22 +89,34 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
             a.AttributeClass?.Name == HotkeyAttributeName &&
             a.AttributeClass.ContainingNamespace.ToDisplayString() == InterfaceNamespace);
 
-        (char Key, System.ConsoleModifiers Modifiers)? hotkey = null;
-        if (hotkeyAttr != null && hotkeyAttr.ConstructorArguments.Length > 0)
+        (char Key, ConsoleModifiers Modifiers)? hotkey = null;
+        if (hotkeyAttr is not { ConstructorArguments.Length: > 0 })
         {
-            var keyArg = hotkeyAttr.ConstructorArguments[0];
-            if (keyArg.Kind == TypedConstantKind.Primitive && keyArg.Value is char c)
-            {
-                var mods = (System.ConsoleModifiers)0;
-                if (hotkeyAttr.ConstructorArguments.Length > 1)
-                {
-                    var modArg = hotkeyAttr.ConstructorArguments[1];
-                    if (modArg.Kind == TypedConstantKind.Enum && modArg.Value is not null)
-                        mods = (System.ConsoleModifiers)System.Convert.ToInt32(modArg.Value);
-                }
-                hotkey = (c, mods);
-            }
+            return new CommandModel(
+                symbol.Name,
+                symbol.ContainingNamespace.ToDisplayString(),
+                subMenuPath,
+                hotkey);
         }
+
+        var keyArg = hotkeyAttr.ConstructorArguments[0];
+        if (keyArg is not { Kind: TypedConstantKind.Primitive, Value: char c })
+        {
+            return new CommandModel(
+                symbol.Name,
+                symbol.ContainingNamespace.ToDisplayString(),
+                subMenuPath,
+                hotkey);
+        }
+
+        var mods = (ConsoleModifiers)0;
+        if (hotkeyAttr.ConstructorArguments.Length > 1)
+        {
+            var modArg = hotkeyAttr.ConstructorArguments[1];
+            if (modArg is { Kind: TypedConstantKind.Enum, Value: not null })
+                mods = (ConsoleModifiers)Convert.ToInt32(modArg.Value);
+        }
+        hotkey = (c, mods);
 
         return new CommandModel(
             symbol.Name,
@@ -122,7 +133,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
         if (models.IsEmpty)
             return;
 
-        var hasGrouped = models.Any(m => !m.SubMenuPath.IsEmpty);
+        bool hasGrouped = models.Any(m => !m.SubMenuPath.IsEmpty);
         var modelsWithHotkeys = models.Where(m => m.Hotkey.HasValue).OrderBy(m => m.TypeName).ToList();
         var hotkeyTypeNames = new HashSet<string>(modelsWithHotkeys.Select(m => m.TypeName));
 
@@ -130,7 +141,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
         foreach (var model in models)
         {
             var node = root;
-            foreach (var segment in model.SubMenuPath)
+            foreach (string? segment in model.SubMenuPath)
             {
                 if (!node.Children.TryGetValue(segment, out var child))
                 {
@@ -155,14 +166,12 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
         if (hasGrouped)
             sb.AppendLine($"using {SubMenuCommandNamespace};");
 
-        foreach (var ns in models
+        foreach (string? ns in models
             .Select(m => m.Namespace)
             .Where(ns => ns != InterfaceNamespace)
             .Distinct()
             .OrderBy(ns => ns))
-        {
             sb.AppendLine($"using {ns};");
-        }
 
         sb.AppendLine();
         sb.AppendLine("namespace TestConsoleApp.Generated;");
@@ -181,9 +190,9 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
             sb.AppendLine();
 
         // Register calls – use variables where available
-        foreach (var typeName in root.CommandTypeNames.OrderBy(t => t))
+        foreach (string? typeName in root.CommandTypeNames.OrderBy(t => t))
         {
-            var expr = hotkeyTypeNames.Contains(typeName) ? GetVarName(typeName) : $"new {typeName}()";
+            string expr = hotkeyTypeNames.Contains(typeName) ? GetVarName(typeName) : $"new {typeName}()";
             sb.AppendLine($"        CommandRegistry.Register({expr});");
         }
 
@@ -196,7 +205,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
 
         foreach (var model in modelsWithHotkeys)
         {
-            var (key, mods) = model.Hotkey!.Value;
+            (char key, ConsoleModifiers mods) = model.Hotkey!.Value;
             sb.AppendLine($"        CommandRegistry.RegisterHotkey('{key}', {FormatModifiers(mods)}, {GetVarName(model.TypeName)});");
         }
 
@@ -212,13 +221,14 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="name">The display name of this submenu level.</param>
     /// <param name="node">The tree node containing child commands and nested submenus.</param>
+    /// <param name="hotkeyTypeNames">A set of type names that have associated hotkeys.</param>
     /// <returns>A C# expression string for constructing the submenu.</returns>
     private static string EmitSubMenuNode(string name, MenuTreeNode node, HashSet<string> hotkeyTypeNames)
     {
         var items = new List<string>();
-        foreach (var typeName in node.CommandTypeNames.OrderBy(t => t))
+        foreach (string? typeName in node.CommandTypeNames.OrderBy(t => t))
         {
-            var expr = hotkeyTypeNames.Contains(typeName) ? GetVarName(typeName) : $"new {typeName}()";
+            string expr = hotkeyTypeNames.Contains(typeName) ? GetVarName(typeName) : $"new {typeName}()";
             items.Add(expr);
         }
         foreach (var kvp in node.Children)
@@ -231,13 +241,13 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
         char.ToLowerInvariant(typeName[0]) + typeName.Substring(1);
 
     /// <summary>Formats a <see cref="System.ConsoleModifiers"/> value as a C# expression.</summary>
-    private static string FormatModifiers(System.ConsoleModifiers modifiers)
+    private static string FormatModifiers(ConsoleModifiers modifiers)
     {
         if ((int)modifiers == 0) return "(ConsoleModifiers)0";
         var parts = new List<string>();
-        if ((modifiers & System.ConsoleModifiers.Alt) != 0) parts.Add("ConsoleModifiers.Alt");
-        if ((modifiers & System.ConsoleModifiers.Shift) != 0) parts.Add("ConsoleModifiers.Shift");
-        if ((modifiers & System.ConsoleModifiers.Control) != 0) parts.Add("ConsoleModifiers.Control");
+        if ((modifiers & ConsoleModifiers.Alt) != 0) parts.Add("ConsoleModifiers.Alt");
+        if ((modifiers & ConsoleModifiers.Shift) != 0) parts.Add("ConsoleModifiers.Shift");
+        if ((modifiers & ConsoleModifiers.Control) != 0) parts.Add("ConsoleModifiers.Control");
         return string.Join(" | ", parts);
     }
 
@@ -248,7 +258,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
         value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     /// <summary>Holds the data extracted from a single command class declaration.</summary>
-    private readonly record struct CommandModel(string TypeName, string Namespace, ImmutableArray<string> SubMenuPath, (char Key, System.ConsoleModifiers Modifiers)? Hotkey);
+    private readonly record struct CommandModel(string TypeName, string Namespace, ImmutableArray<string> SubMenuPath, (char Key, ConsoleModifiers Modifiers)? Hotkey);
 
     /// <summary>
     /// An internal tree node used to accumulate the nested submenu structure
@@ -257,9 +267,9 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
     private sealed class MenuTreeNode
     {
         /// <summary>Gets the type names of commands registered directly at this node.</summary>
-        public List<string> CommandTypeNames { get; } = new List<string>();
+        public List<string> CommandTypeNames { get; } = [];
 
         /// <summary>Gets the named child nodes representing deeper menu levels.</summary>
-        public SortedDictionary<string, MenuTreeNode> Children { get; } = new SortedDictionary<string, MenuTreeNode>(System.StringComparer.Ordinal);
+        public SortedDictionary<string, MenuTreeNode> Children { get; } = new(StringComparer.Ordinal);
     }
 }

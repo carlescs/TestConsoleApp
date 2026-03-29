@@ -84,7 +84,7 @@ public sealed class CliCommandBuilderTests
     [InlineData("  Leading Spaces  ", "leading-spaces")]
     public void Configure_LeafCommand_CanBeInvokedByKebabCasedName(string title, string kebabName)
     {
-        var executed = false;
+        bool executed = false;
         var command = Substitute.For<IMenuCommand>();
         command.Title.Returns(title);
         command.ExecuteAsync(Arg.Any<CancellationToken>())
@@ -100,7 +100,7 @@ public sealed class CliCommandBuilderTests
     [Fact]
     public void Configure_BranchLeafCommand_CanBeInvoked()
     {
-        var executed = false;
+        bool executed = false;
         var leaf = Substitute.For<IMenuCommand>();
         leaf.Title.Returns("Leaf Command");
         leaf.ExecuteAsync(Arg.Any<CancellationToken>())

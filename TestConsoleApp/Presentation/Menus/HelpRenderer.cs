@@ -53,10 +53,10 @@ internal static class HelpRenderer
 
             foreach (var entry in section.Entries)
             {
-                var hotkeyCell = entry.Hotkey.Length > 0
+                string hotkeyCell = entry.Hotkey.Length > 0
                     ? $"[bold cyan]{Markup.Escape(entry.Hotkey)}[/]"
                     : string.Empty;
-                var descCell = entry.Description is not null
+                string descCell = entry.Description is not null
                     ? $"[dim]{Markup.Escape(entry.Description)}[/]"
                     : "[dim italic](no description)[/]";
 
@@ -104,7 +104,7 @@ internal static class HelpRenderer
         }
 
         foreach (var sub in commands.OfType<SubMenuCommand>())
-            CollectSections(sub.ChildCommands, sub.Title, result);
+                CollectSections(sub.ChildCommands, sub.Title, result);
     }
 
     private static string FormatHotkey((char Key, ConsoleModifiers Modifiers)? hotkey) =>

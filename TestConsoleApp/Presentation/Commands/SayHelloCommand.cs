@@ -20,11 +20,11 @@ public sealed class SayHelloCommand(IAnsiConsole? console = null) : IMenuCommand
     {
         _console.Clear();
 
-        var name = _console.Prompt(
+        string name = _console.Prompt(
             new TextPrompt<string>("What is your name?")
                 .AllowEmpty());
 
-        var greeting = string.IsNullOrWhiteSpace(name) ? "Hello world!" : $"Hello {name}!";
+        string greeting = string.IsNullOrWhiteSpace(name) ? "Hello world!" : $"Hello {name}!";
 
         _console.MarkupLine($"\n[bold green]{greeting}[/]\n");
         _console.MarkupLine("[dim]Press any key to continue...[/]");

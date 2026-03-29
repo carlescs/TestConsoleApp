@@ -94,7 +94,7 @@ public sealed class MenuInteractionTests
     public void BuildBadgeMarkup_NoModifier_ContainsBadgeAndPadding()
     {
         // content = "H" (1 char), padding = 8 - 1 - 2 = 5 spaces
-        var result = MenuInteraction.BuildBadgeMarkup('H', default);
+        string result = MenuInteraction.BuildBadgeMarkup('H', default);
 
         Assert.Equal("[[[bold cyan]H[/]]]     ", result);
     }
@@ -103,7 +103,7 @@ public sealed class MenuInteractionTests
     public void BuildBadgeMarkup_WithCtrl_ContainsCaretPrefix()
     {
         // content = "^H" (2 chars), padding = 8 - 2 - 2 = 4 spaces
-        var result = MenuInteraction.BuildBadgeMarkup('H', ConsoleModifiers.Control);
+        string result = MenuInteraction.BuildBadgeMarkup('H', ConsoleModifiers.Control);
 
         Assert.Equal("[[[bold cyan]^H[/]]]    ", result);
     }
@@ -112,7 +112,7 @@ public sealed class MenuInteractionTests
     public void BuildBadgeMarkup_WithCtrlAndAlt_ContainsBothPrefixes()
     {
         // content = "^~H" (3 chars), padding = 8 - 3 - 2 = 3 spaces
-        var result = MenuInteraction.BuildBadgeMarkup('H', ConsoleModifiers.Control | ConsoleModifiers.Alt);
+        string result = MenuInteraction.BuildBadgeMarkup('H', ConsoleModifiers.Control | ConsoleModifiers.Alt);
 
         Assert.Equal("[[[bold cyan]^~H[/]]]   ", result);
     }
