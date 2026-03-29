@@ -202,12 +202,10 @@ Versioning is fully automated via **MinVer** — no pipeline commits required.
 
 ## 📤 Publishing
 
-The CI pipeline (`.github/workflows/dotnet.yml`) builds, tests, packs, and pushes the NuGet package to the **GitHub Packages** registry automatically on every push of a `v*` tag.
+The CI pipeline (`.github/workflows/dotnet.yml`) builds, tests, packs, and pushes the NuGet package to the **GitHub Packages** registry. It is triggered either by a direct `v*` tag push or dispatched directly by the `Create Version Tag` workflow after it creates the tag.
 
 - `--skip-duplicate` is used so re-running the workflow for the same version is safe.
 - Packages are published to: `https://nuget.pkg.github.com/carlescs/index.json`
-
-> **Required secret:** The `Create Version Tag` workflow uses a repository secret named **`PAT`** (a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `repo` scope). GitHub does not allow events produced by `GITHUB_TOKEN` to trigger other workflows, so a PAT is required to ensure the pushed tag fires the build pipeline.
 
 ---
 

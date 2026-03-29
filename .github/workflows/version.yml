@@ -1,5 +1,5 @@
-# Automatically determines the next semantic version tag from commits since the last tag
-# and pushes it, which in turn triggers the build + publish pipeline in dotnet.yml.
+# Automatically determines the next semantic version tag from commits since the last tag,
+# pushes it, and directly dispatches the build + publish pipeline in dotnet.yml.
 #
 # Version bump rules (Conventional Commits):
 #   BREAKING CHANGE in footer, or type! (e.g. feat!:)  →  major
@@ -26,6 +26,7 @@ on:
 
 permissions:
   contents: write
+  actions: write  # Required to dispatch dotnet.yml after pushing the tag
 
 jobs:
   tag:
@@ -35,7 +36,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # Full history required to walk tags
-          token: ${{ secrets.PAT }}  # PAT required so the pushed tag triggers dotnet.yml (GITHUB_TOKEN cannot trigger downstream workflows)
 
       - name: Get latest tag
         id: latest_tag
@@ -161,6 +161,15 @@ jobs:
           git push origin "${NEW_TAG}"
           echo "✅ Created and pushed tag: ${NEW_TAG}"
 
+      - name: Dispatch build pipeline
+        if: steps.version.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_TAG="${{ steps.version.outputs.version }}"
+          gh workflow run dotnet.yml --ref "${NEW_TAG}"
+          echo "✅ Dispatched dotnet.yml for tag: ${NEW_TAG}"
+
       - name: Summary
         if: always()
         run: |
@@ -179,5 +188,5 @@ jobs:
             echo "| New tag | \`${NEW_TAG}\` |" >> "$GITHUB_STEP_SUMMARY"
             echo "| Bump type | \`${BUMP_TYPE}\` |" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "The [build and publish workflow](../actions/workflows/dotnet.yml) will be triggered automatically." >> "$GITHUB_STEP_SUMMARY"
+            echo "The [build and publish workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/dotnet.yml) has been dispatched directly." >> "$GITHUB_STEP_SUMMARY"
           fi

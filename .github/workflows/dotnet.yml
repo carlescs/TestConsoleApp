@@ -3,8 +3,9 @@
 #
 # To cut a release, trigger the Create Version Tag workflow via the GitHub Actions
 # "Run workflow" UI (workflow_dispatch) instead of creating tags by hand. It will
-# compute the next semantic version from Conventional Commits and push the tag,
-# which in turn triggers this workflow to build, test, pack, and publish.
+# compute the next semantic version from Conventional Commits, push the tag, and
+# then directly dispatch this workflow for that tag — no PAT required.
+# Manually pushing a v* tag will also trigger this workflow.
 
 name: .NET
 
@@ -14,6 +15,7 @@ on:
     tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
