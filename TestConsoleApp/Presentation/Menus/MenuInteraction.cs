@@ -28,6 +28,7 @@ internal static class MenuInteraction
             if (keyInfo.Key == ConsoleKey.DownArrow) { selectedIndex = (selectedIndex + 1) % totalItems; continue; }
             if (keyInfo.Key == ConsoleKey.Enter) return selectedIndex == commands.Count ? null : commands[selectedIndex];
             if (keyInfo.Key == ConsoleKey.Escape) return null;
+            if (keyInfo.Key == ConsoleKey.F1 || keyInfo.KeyChar == '?') { HelpRenderer.Show(); continue; }
 
             // Local hotkey dispatch
             for (var i = 0; i < hotkeys.Length; i++)
@@ -79,7 +80,7 @@ internal static class MenuInteraction
             : null;
         if (description is not null)
             AnsiConsole.MarkupLine($"[dim italic]{Markup.Escape(description)}[/]");
-        AnsiConsole.MarkupLine("[dim]↑↓ navigate  Enter select  Esc back  ^=Ctrl ~=Alt  hotkey/global dispatch[/]");
+        AnsiConsole.MarkupLine("[dim]↑↓ navigate  Enter select  Esc back  F1/? help  ^=Ctrl ~=Alt  hotkey/global dispatch[/]");
     }
 
     internal static string BuildBadgeMarkup(char key, ConsoleModifiers modifiers)
