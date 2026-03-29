@@ -1,0 +1,182 @@
+# Automatically determines the next semantic version tag from commits since the last tag
+# and pushes it, which in turn triggers the build + publish pipeline in dotnet.yml.
+#
+# Version bump rules (Conventional Commits):
+#   BREAKING CHANGE in footer, or type! (e.g. feat!:)  →  major
+#   feat:                                               →  minor
+#   fix:, perf:, refactor:, chore:, docs:, …           →  patch
+#
+# The bump can also be overridden manually via the workflow_dispatch input.
+
+name: Create Version Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type (auto-detected from commits when set to "auto")'
+        required: false
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        default: auto
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Full history required to walk tags
+
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "")
+          # Discard any tag that does not strictly follow vMAJOR.MINOR.PATCH
+          if [ -n "${LATEST_TAG}" ] && ! echo "${LATEST_TAG}" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Latest tag '${LATEST_TAG}' does not follow vMAJOR.MINOR.PATCH; ignoring it for version calculation."
+            LATEST_TAG=""
+          fi
+          echo "tag=${LATEST_TAG}" >> "$GITHUB_OUTPUT"
+          if [ -z "${LATEST_TAG}" ]; then
+            echo "No existing tag found — will start from v1.0.0"
+          else
+            echo "Latest tag: ${LATEST_TAG}"
+          fi
+
+      - name: Detect bump type from commits
+        id: bump
+        run: |
+          MANUAL_BUMP="${{ inputs.bump }}"
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+
+          # Collect SHA list of commits since the last tag
+          if [ -z "${LATEST_TAG}" ]; then
+            COMMITS_LIST=$(git log --format="%H" HEAD)
+          else
+            COMMITS_LIST=$(git log --format="%H" "${LATEST_TAG}..HEAD")
+          fi
+
+          # Skip (even for manual bumps) when there are no commits since the last tag
+          if [ -z "${COMMITS_LIST}" ]; then
+            echo "No commits since last tag — nothing to version."
+            echo "type=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Honor a manual override (only after confirming there are commits to release)
+          if [ "${MANUAL_BUMP}" != "auto" ] && [ -n "${MANUAL_BUMP}" ]; then
+            echo "type=${MANUAL_BUMP}" >> "$GITHUB_OUTPUT"
+            echo "Using manual bump: ${MANUAL_BUMP}"
+            exit 0
+          fi
+
+          BUMP="patch"
+
+          while IFS= read -r sha; do
+            SUBJECT=$(git log -1 --format="%s" "${sha}")
+            BODY=$(git log -1 --format="%b" "${sha}")
+
+            # Breaking change: exclamation-mark type in subject (e.g. feat!:, feat(scope)!:)
+            if echo "${SUBJECT}" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:'; then
+              BUMP="major"
+              break
+            fi
+            # Breaking change: BREAKING CHANGE or BREAKING-CHANGE token anywhere in commit body/footer
+            if echo "${BODY}" | grep -qE 'BREAKING[- ]CHANGE:'; then
+              BUMP="major"
+              break
+            fi
+            # New feature in subject
+            if echo "${SUBJECT}" | grep -qE '^feat(\([^)]*\))?:'; then
+              BUMP="minor"
+            fi
+          done <<< "${COMMITS_LIST}"
+
+          echo "type=${BUMP}" >> "$GITHUB_OUTPUT"
+          echo "Detected bump type: ${BUMP}"
+
+      - name: Compute new version
+        id: version
+        run: |
+          BUMP_TYPE="${{ steps.bump.outputs.type }}"
+
+          if [ "${BUMP_TYPE}" = "none" ]; then
+            echo "No version bump needed — skipping tag creation."
+            exit 0
+          fi
+
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+
+          if [ -z "${LATEST_TAG}" ]; then
+            CURRENT="0.0.0"
+          else
+            CURRENT="${LATEST_TAG#v}"
+          fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT}"
+
+          case "${BUMP_TYPE}" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=${NEW_TAG}" >> "$GITHUB_OUTPUT"
+          echo "New version tag: ${NEW_TAG}"
+
+      - name: Create and push tag
+        if: steps.version.outputs.version != ''
+        run: |
+          NEW_TAG="${{ steps.version.outputs.version }}"
+
+          # Guard against re-runs or concurrent dispatches computing the same tag
+          if git rev-parse --verify "refs/tags/${NEW_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${NEW_TAG} already exists — skipping creation and push."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${NEW_TAG}"
+          git push origin "${NEW_TAG}"
+          echo "✅ Created and pushed tag: ${NEW_TAG}"
+
+      - name: Summary
+        if: always()
+        run: |
+          BUMP_TYPE="${{ steps.bump.outputs.type }}"
+          NEW_TAG="${{ steps.version.outputs.version }}"
+
+          if [ "${BUMP_TYPE}" = "none" ]; then
+            echo "### ℹ️ No new tag created" >> "$GITHUB_STEP_SUMMARY"
+            echo "There were no commits since the last tag." >> "$GITHUB_STEP_SUMMARY"
+          elif [ -n "${NEW_TAG}" ]; then
+            echo "### 🚀 New tag created: \`${NEW_TAG}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Previous tag | \`${{ steps.latest_tag.outputs.tag }}\` |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| New tag | \`${NEW_TAG}\` |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Bump type | \`${BUMP_TYPE}\` |" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The [build and publish workflow](../actions/workflows/dotnet.yml) will be triggered automatically." >> "$GITHUB_STEP_SUMMARY"
+          fi

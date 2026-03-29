@@ -1,6 +1,10 @@
 # Build, test, and publish the TestConsoleApp .NET tool to GitHub Packages.
 # Versioning is handled automatically by MinVer using git tags (no CI commits needed).
-# To cut a release, push a tag: git tag v1.2.3 && git push --tags
+#
+# To cut a release, trigger the Create Version Tag workflow via the GitHub Actions
+# "Run workflow" UI (workflow_dispatch) instead of creating tags by hand. It will
+# compute the next semantic version from Conventional Commits and push the tag,
+# which in turn triggers this workflow to build, test, pack, and publish.
 
 name: .NET
 
