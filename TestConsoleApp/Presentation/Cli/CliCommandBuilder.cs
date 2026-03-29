@@ -39,7 +39,7 @@ internal static partial class CliCommandBuilder
                         c.ExecuteAsync(ct).GetAwaiter().GetResult();
                         return 0;
                     })
-                    .WithDescription(c.Title);
+                    .WithDescription(CommandRegistry.GetDescription(c) ?? c.Title);
             }
         }
     }
@@ -69,7 +69,7 @@ internal static partial class CliCommandBuilder
                         c.ExecuteAsync(ct).GetAwaiter().GetResult();
                         return 0;
                     })
-                    .WithDescription(c.Title);
+                    .WithDescription(CommandRegistry.GetDescription(c) ?? c.Title);
             }
         }
     }

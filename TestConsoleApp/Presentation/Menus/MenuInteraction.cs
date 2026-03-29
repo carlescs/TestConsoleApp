@@ -73,7 +73,13 @@ internal static class MenuInteraction
             ? $" [bold]>[/] {exitPad} [bold]{Markup.Escape(exitLabel)}[/]"
             : $"   {exitPad} {Markup.Escape(exitLabel)}");
 
-        AnsiConsole.MarkupLine("\n[dim]↑↓ navigate  Enter select  Esc back  ^=Ctrl ~=Alt  hotkey/global dispatch[/]");
+        AnsiConsole.WriteLine();
+        var description = selectedIndex < commands.Count
+            ? CommandRegistry.GetDescription(commands[selectedIndex])
+            : null;
+        if (description is not null)
+            AnsiConsole.MarkupLine($"[dim italic]{Markup.Escape(description)}[/]");
+        AnsiConsole.MarkupLine("[dim]↑↓ navigate  Enter select  Esc back  ^=Ctrl ~=Alt  hotkey/global dispatch[/]");
     }
 
     internal static string BuildBadgeMarkup(char key, ConsoleModifiers modifiers)

@@ -8,6 +8,7 @@ namespace TestConsoleApp.Presentation.Commands;
 /// </summary>
 [SubMenu("Utilities")]
 [Hotkey('G', ConsoleModifiers.Control)]
+[CommandDescription("Generates and displays a new random GUID.")]
 public sealed class GenerateGuidCommand(IAnsiConsole? console = null) : IMenuCommand
 {
     private readonly IAnsiConsole _console = console ?? AnsiConsole.Console;

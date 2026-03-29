@@ -111,4 +111,13 @@ public sealed class SayHelloCommandTests
 
         Assert.Null(exception);
     }
+
+    [Fact]
+    public void HasCommandDescriptionAttribute()
+    {
+        var attr = typeof(SayHelloCommand).GetCustomAttribute<CommandDescriptionAttribute>();
+
+        Assert.NotNull(attr);
+        Assert.False(string.IsNullOrWhiteSpace(attr.Description));
+    }
 }

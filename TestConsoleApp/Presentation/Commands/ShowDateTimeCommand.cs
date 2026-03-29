@@ -8,6 +8,7 @@ namespace TestConsoleApp.Presentation.Commands;
 /// </summary>
 [SubMenu("Utilities")]
 [Hotkey('D', ConsoleModifiers.Control)]
+[CommandDescription("Displays the current date and time in full format.")]
 public sealed class ShowDateTimeCommand(IAnsiConsole? console = null) : IMenuCommand
 {
     private readonly IAnsiConsole _console = console ?? AnsiConsole.Console;

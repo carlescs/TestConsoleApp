@@ -7,6 +7,7 @@ namespace TestConsoleApp.Presentation.Commands;
 /// A root-level menu command that prompts the user for their name and prints a personalised greeting.
 /// </summary>
 [Hotkey('H', ConsoleModifiers.Control)]
+[CommandDescription("Asks for your name and greets you — or greets the world when no name is given.")]
 public sealed class SayHelloCommand(IAnsiConsole? console = null) : IMenuCommand
 {
     private readonly IAnsiConsole _console = console ?? AnsiConsole.Console;

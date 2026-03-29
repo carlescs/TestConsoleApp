@@ -111,4 +111,13 @@ public sealed class GenerateGuidCommandTests
 
         Assert.Null(exception);
     }
+
+    [Fact]
+    public void HasCommandDescriptionAttribute()
+    {
+        var attr = typeof(GenerateGuidCommand).GetCustomAttribute<CommandDescriptionAttribute>();
+
+        Assert.NotNull(attr);
+        Assert.False(string.IsNullOrWhiteSpace(attr!.Description));
+    }
 }

@@ -1,5 +1,7 @@
 namespace TestConsoleApp.Application.Abstractions;
 
+using System.Reflection;
+
 /// <summary>
 /// A static registry that holds all <see cref="IMenuCommand"/> instances available in the
 /// application. Commands are populated at startup via the source-generated module initializer.
@@ -41,6 +43,14 @@ public static class CommandRegistry
     /// </summary>
     public static (char Key, ConsoleModifiers Modifiers)? GetHotkey(IMenuCommand command) =>
         _hotkeys.TryGetValue(command.GetType(), out var entry) ? entry : null;
+
+    /// <summary>
+    /// Returns the description for <paramref name="command"/> from its
+    /// <see cref="CommandDescriptionAttribute"/>, or <see langword="null"/> if the attribute
+    /// is not present.
+    /// </summary>
+    public static string? GetDescription(IMenuCommand command) =>
+        command.GetType().GetCustomAttribute<CommandDescriptionAttribute>()?.Description;
 
     /// <summary>
     /// Finds any registered command whose hotkey matches <paramref name="keyInfo"/>,

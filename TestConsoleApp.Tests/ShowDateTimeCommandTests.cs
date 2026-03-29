@@ -95,4 +95,13 @@ public sealed class ShowDateTimeCommandTests
 
         Assert.Null(exception);
     }
+
+    [Fact]
+    public void HasCommandDescriptionAttribute()
+    {
+        var attr = typeof(ShowDateTimeCommand).GetCustomAttribute<CommandDescriptionAttribute>();
+
+        Assert.NotNull(attr);
+        Assert.False(string.IsNullOrWhiteSpace(attr!.Description));
+    }
 }

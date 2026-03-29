@@ -224,4 +224,36 @@ public sealed class CommandRegistryTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal('X', result!.Value.Key);
     }
+
+    [Fact]
+    public void GetDescription_ReturnsNull_WhenCommandHasNoDescriptionAttribute()
+    {
+        var command = Substitute.For<IMenuCommand>();
+
+        Assert.Null(CommandRegistry.GetDescription(command));
+    }
+
+    [Fact]
+    public void GetDescription_ReturnsDescription_WhenAttributeIsPresent()
+    {
+        var command = new DescribedCommand();
+
+        Assert.Equal("A described command.", CommandRegistry.GetDescription(command));
+    }
+
+    [Fact]
+    public void GetDescription_ReturnsDescription_ReflectedFromType_NotFromInstance()
+    {
+        // Two instances of the same type must return the same description.
+        Assert.Equal(
+            CommandRegistry.GetDescription(new DescribedCommand()),
+            CommandRegistry.GetDescription(new DescribedCommand()));
+    }
+
+    [CommandDescription("A described command.")]
+    private sealed class DescribedCommand : IMenuCommand
+    {
+        public string Title => "Described";
+        public Task ExecuteAsync(CancellationToken ct = default) => Task.CompletedTask;
+    }
 }
