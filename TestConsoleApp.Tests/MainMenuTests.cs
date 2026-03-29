@@ -51,7 +51,7 @@ public sealed class MainMenuTests
         var command = Substitute.For<IMenuCommand>();
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
-            .Returns<IMenuCommand?>(command, (IMenuCommand?)null);
+            .Returns(command, (IMenuCommand?)null);
         var menu = new MainMenu([command], interaction);
 
         await menu.RunAsync();
@@ -65,7 +65,7 @@ public sealed class MainMenuTests
         var command = Substitute.For<IMenuCommand>();
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
-            .Returns<IMenuCommand?>(command, command, command, null);
+            .Returns(command, command, command, null);
         var menu = new MainMenu([command], interaction);
 
         await menu.RunAsync();
@@ -120,18 +120,32 @@ public sealed class MainMenuTests
     public async Task RunAsync_PassesCancellationTokenToCommand()
     {
         using var cts = new CancellationTokenSource();
-        CancellationToken capturedToken = default;
+        CancellationToken capturedToken = CancellationToken.None;
         var command = Substitute.For<IMenuCommand>();
         command.ExecuteAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(0))
             .AndDoes(ci => capturedToken = ci.Arg<CancellationToken>());
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
-            .Returns<IMenuCommand?>(command, (IMenuCommand?)null);
+            .Returns(command, (IMenuCommand?)null);
         var menu = new MainMenu([command], interaction);
 
         await menu.RunAsync(cts.Token);
 
         Assert.Equal(cts.Token, capturedToken);
+    }
+
+    [Fact]
+    public async Task RunAsync_BannerDoesNotThrow()
+    {
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns((IMenuCommand?)null)
+            .AndDoes(ci => ci.Arg<Action?>()?.Invoke());
+        var menu = new MainMenu([], interaction);
+
+        var exception = await Record.ExceptionAsync(() => menu.RunAsync());
+
+        Assert.Null(exception);
     }
 }

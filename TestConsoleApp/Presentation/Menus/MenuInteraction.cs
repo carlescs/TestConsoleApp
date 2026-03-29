@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Spectre.Console;
 using TestConsoleApp.Application.Abstractions;
 
@@ -7,6 +8,7 @@ internal static class MenuInteraction
 {
     private const int BadgeColumnWidth = 8;
 
+    [ExcludeFromCodeCoverage]
     internal static IMenuCommand? Show(
         string header,
         IReadOnlyList<IMenuCommand> commands,
@@ -37,7 +39,7 @@ internal static class MenuInteraction
         }
     }
 
-    private static bool HotkeyMatches(ConsoleKeyInfo keyInfo, char hotkey, ConsoleModifiers required)
+    internal static bool HotkeyMatches(ConsoleKeyInfo keyInfo, char hotkey, ConsoleModifiers required)
     {
         var pressedMods = keyInfo.Modifiers & ~ConsoleModifiers.Shift;
         var requiredMods = required & ~ConsoleModifiers.Shift;
@@ -47,6 +49,7 @@ internal static class MenuInteraction
         return char.ToUpperInvariant(effectiveChar) == char.ToUpperInvariant(hotkey);
     }
 
+    [ExcludeFromCodeCoverage]
     private static void Render(string header, IReadOnlyList<IMenuCommand> commands,
         (char Key, ConsoleModifiers Modifiers)?[] hotkeys, string exitLabel, int selectedIndex, Action? banner)
     {
@@ -72,14 +75,14 @@ internal static class MenuInteraction
         AnsiConsole.MarkupLine("\n[dim]↑↓ navigate  Enter select  hotkey/global dispatch  ^=Ctrl ~=Alt[/]");
     }
 
-    private static string BuildBadgeMarkup(char key, ConsoleModifiers modifiers)
+    internal static string BuildBadgeMarkup(char key, ConsoleModifiers modifiers)
     {
         var content = BuildBadgeContent(modifiers, key);
         var padding = new string(' ', BadgeColumnWidth - content.Length - 2);
         return $"[[[bold cyan]{Markup.Escape(content)}[/]]]{padding}";
     }
 
-    private static string BuildBadgeContent(ConsoleModifiers modifiers, char key)
+    internal static string BuildBadgeContent(ConsoleModifiers modifiers, char key)
     {
         var sb = new System.Text.StringBuilder();
         if ((modifiers & ConsoleModifiers.Control) != 0) sb.Append('^');

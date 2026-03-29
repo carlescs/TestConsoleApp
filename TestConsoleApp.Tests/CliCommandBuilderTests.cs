@@ -96,4 +96,21 @@ public sealed class CliCommandBuilderTests
 
         Assert.True(executed);
     }
+
+    [Fact]
+    public void Configure_BranchLeafCommand_CanBeInvoked()
+    {
+        var executed = false;
+        var leaf = Substitute.For<IMenuCommand>();
+        leaf.Title.Returns("Leaf Command");
+        leaf.ExecuteAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => { executed = true; return Task.CompletedTask; });
+        var subMenu = new SubMenuCommand("My Tools", [leaf]);
+        var app = new CommandApp();
+        app.Configure(config => CliCommandBuilder.Configure(config, [subMenu]));
+
+        app.Run(["my-tools", "leaf-command"]);
+
+        Assert.True(executed);
+    }
 }

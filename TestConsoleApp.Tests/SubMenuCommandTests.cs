@@ -125,7 +125,7 @@ public sealed class SubMenuCommandTests
         IMenuCommand? command = Substitute.For<IMenuCommand>();
         IMenuInteraction? interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
-            .Returns<IMenuCommand?>(command, (IMenuCommand?)null);
+            .Returns(command, (IMenuCommand?)null);
         var subMenu = new SubMenuCommand("Test", [command], interaction);
 
         await subMenu.ExecuteAsync();
@@ -139,7 +139,7 @@ public sealed class SubMenuCommandTests
         var command = Substitute.For<IMenuCommand>();
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
-            .Returns<IMenuCommand?>(command, command, command, null);
+            .Returns(command, command, command, null);
         var subMenu = new SubMenuCommand("Test", [command], interaction);
 
         await subMenu.ExecuteAsync();
@@ -179,10 +179,10 @@ public sealed class SubMenuCommandTests
         using var cts = new CancellationTokenSource();
         var command = Substitute.For<IMenuCommand>();
         command.ExecuteAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult(0))
-            .AndDoes(_ => cts.Cancel());
+            .AndDoes(_ => cts!.Cancel());
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
-            .Returns<IMenuCommand?>(command, command);
+            .Returns(command, command);
         var subMenu = new SubMenuCommand("Test", [command], interaction);
 
         await subMenu.ExecuteAsync(cts.Token);
@@ -194,14 +194,14 @@ public sealed class SubMenuCommandTests
     public async Task ExecuteAsync_PassesCancellationTokenToCommand()
     {
         using var cts = new CancellationTokenSource();
-        CancellationToken capturedToken = default;
+        CancellationToken capturedToken = CancellationToken.None;
         var command = Substitute.For<IMenuCommand>();
         command.ExecuteAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(0))
             .AndDoes(ci => capturedToken = ci.Arg<CancellationToken>());
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
-            .Returns<IMenuCommand?>(command, (IMenuCommand?)null);
+            .Returns(command, (IMenuCommand?)null);
         var subMenu = new SubMenuCommand("Test", [command], interaction);
 
         await subMenu.ExecuteAsync(cts.Token);
