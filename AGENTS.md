@@ -141,7 +141,7 @@ Versioning is fully automated via **MinVer** — no pipeline commits required.
 
 ## Publishing
 
-Packages are published to the **GitHub Packages NuGet registry** on every push to `main`.
+Packages are published to the **GitHub Packages NuGet registry** on every push of a `v*` tag, and also when the `Create Version Tag` workflow dispatches `dotnet.yml` directly after creating a tag.
 
 - The tool can be installed globally: `dotnet tool install --global TestConsoleApp --add-source https://nuget.pkg.github.com/carlescs/index.json`
 - `--skip-duplicate` is used in the push step so re-running the workflow for the same version is safe.
