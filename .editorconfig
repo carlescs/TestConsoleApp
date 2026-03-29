@@ -28,7 +28,7 @@ csharp_style_expression_bodied_properties = when_on_single_line:suggestion
 csharp_style_expression_bodied_constructors = false:silent
 csharp_style_var_for_built_in_types = false:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
-csharp_style_var_elsewhere = false:suggestion
+csharp_style_var_elsewhere = false:silent
 csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
@@ -38,6 +38,7 @@ csharp_style_pattern_matching_over_is_with_cast_check = true:warning
 csharp_style_pattern_matching_over_as_with_null_check = true:warning
 csharp_style_prefer_switch_expression = true:suggestion
 csharp_style_prefer_null_check_over_type_check = true:warning
+csharp_prefer_simple_default_expression = true:suggestion
 
 # .NET code quality
 dotnet_style_qualification_for_field = false:warning
