@@ -141,10 +141,12 @@ Versioning is fully automated via **MinVer** — no pipeline commits required.
 
 ## Publishing
 
-Packages are published to the **GitHub Packages NuGet registry** on every push to `main`.
+Packages are published to the **GitHub Packages NuGet registry** on every push of a `v*` tag.
 
 - The tool can be installed globally: `dotnet tool install --global TestConsoleApp --add-source https://nuget.pkg.github.com/carlescs/index.json`
 - `--skip-duplicate` is used in the push step so re-running the workflow for the same version is safe.
+
+> **Required secret:** The `Create Version Tag` workflow (`version.yml`) must be granted a repository secret named **`PAT`** containing a [GitHub Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `repo` (or `contents: write`) scope. This is necessary because GitHub does not allow events created by `GITHUB_TOKEN` to trigger downstream workflows — without a PAT, pushing a version tag from the workflow would **not** trigger the build and publish pipeline in `dotnet.yml`.
 
 ---
 
