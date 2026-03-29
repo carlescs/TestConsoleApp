@@ -33,19 +33,105 @@ public sealed class MainMenuTests
     }
 
     [Fact]
-    public async Task RunAsync_WithMultipleCommands_WhenTokenAlreadyCancelled_DoesNotExecuteAny()
+    public async Task RunAsync_WhenMenuReturnsNull_ExitsImmediately()
     {
-        var cmd1 = Substitute.For<IMenuCommand>();
-        var cmd2 = Substitute.For<IMenuCommand>();
-        cmd1.Title.Returns("First");
-        cmd2.Title.Returns("Second");
-        var menu = new MainMenu([cmd1, cmd2]);
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns((IMenuCommand?)null);
+        var menu = new MainMenu([], interaction);
+
+        await menu.RunAsync();
+
+        interaction.Received(1).Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>());
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenCommandSelected_ExecutesCommand()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns<IMenuCommand?>(command, (IMenuCommand?)null);
+        var menu = new MainMenu([command], interaction);
+
+        await menu.RunAsync();
+
+        await command.Received(1).ExecuteAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenCommandSelectedMultipleTimes_ExecutesEachTime()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns<IMenuCommand?>(command, command, command, null);
+        var menu = new MainMenu([command], interaction);
+
+        await menu.RunAsync();
+
+        await command.Received(3).ExecuteAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_ShowIsCalledWithMainMenuHeader()
+    {
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns((IMenuCommand?)null);
+        var menu = new MainMenu([], interaction);
+
+        await menu.RunAsync();
+
+        interaction.Received().Show(Arg.Is<string>(h => h == "Main Menu"), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>());
+    }
+
+    [Fact]
+    public async Task RunAsync_ShowIsCalledWithExitLabel()
+    {
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns((IMenuCommand?)null);
+        var menu = new MainMenu([], interaction);
+
+        await menu.RunAsync();
+
+        interaction.Received().Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Is<string>(l => l == "Exit"), Arg.Any<Action?>());
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenCommandCancelsToken_StopsLoop()
+    {
         using var cts = new CancellationTokenSource();
-        await cts.CancelAsync();
+        var command = Substitute.For<IMenuCommand>();
+        command.ExecuteAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult(0))
+            .AndDoes(_ => cts.Cancel());
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns<IMenuCommand?>(command, command);
+        var menu = new MainMenu([command], interaction);
 
         await menu.RunAsync(cts.Token);
 
-        await cmd1.DidNotReceive().ExecuteAsync(Arg.Any<CancellationToken>());
-        await cmd2.DidNotReceive().ExecuteAsync(Arg.Any<CancellationToken>());
+        await command.Received(1).ExecuteAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_PassesCancellationTokenToCommand()
+    {
+        using var cts = new CancellationTokenSource();
+        CancellationToken capturedToken = default;
+        var command = Substitute.For<IMenuCommand>();
+        command.ExecuteAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(0))
+            .AndDoes(ci => capturedToken = ci.Arg<CancellationToken>());
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns<IMenuCommand?>(command, (IMenuCommand?)null);
+        var menu = new MainMenu([command], interaction);
+
+        await menu.RunAsync(cts.Token);
+
+        Assert.Equal(cts.Token, capturedToken);
     }
 }

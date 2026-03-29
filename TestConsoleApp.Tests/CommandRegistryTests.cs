@@ -178,4 +178,50 @@ public sealed class CommandRegistryTests : IDisposable
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public void FindGlobalCommand_MatchesAltHotkey()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        CommandRegistry.RegisterHotkey('A', ConsoleModifiers.Alt, command);
+
+        var result = CommandRegistry.FindGlobalCommand(new ConsoleKeyInfo('\0', ConsoleKey.A, false, true, false));
+
+        Assert.Same(command, result);
+    }
+
+    [Fact]
+    public void FindGlobalCommand_ReturnsNull_WhenAltRequired_ButNotPressed()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        CommandRegistry.RegisterHotkey('A', ConsoleModifiers.Alt, command);
+
+        var result = CommandRegistry.FindGlobalCommand(new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void FindGlobalCommand_MatchesAltHotkey_CaseInsensitive()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        CommandRegistry.RegisterHotkey('a', ConsoleModifiers.Alt, command);
+
+        var result = CommandRegistry.FindGlobalCommand(new ConsoleKeyInfo('\0', ConsoleKey.A, false, true, false));
+
+        Assert.Same(command, result);
+    }
+
+    [Fact]
+    public void RegisterHotkey_OverwritesPreviousHotkey_WhenRegisteredTwiceForSameInstance()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        CommandRegistry.RegisterHotkey('H', (ConsoleModifiers)0, command);
+        CommandRegistry.RegisterHotkey('X', (ConsoleModifiers)0, command);
+
+        var result = CommandRegistry.GetHotkey(command);
+
+        Assert.NotNull(result);
+        Assert.Equal('X', result!.Value.Key);
+    }
 }

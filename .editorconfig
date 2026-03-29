@@ -16,6 +16,7 @@ indent_size = 4
 # C# language conventions
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
+dotnet_style_prefer_compound_assignment = true:suggestion
 
 csharp_style_namespace_declarations = file_scoped:warning
 csharp_using_directive_placement = outside_namespace:warning

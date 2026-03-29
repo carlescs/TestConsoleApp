@@ -7,11 +7,21 @@ namespace TestConsoleApp.Presentation.Menus;
 /// Presents the top-level interactive menu using Spectre.Console, looping until the user
 /// chooses to exit or the cancellation token is cancelled.
 /// </summary>
-/// <param name="commands">The commands to display at the root level of the menu.</param>
-public sealed class MainMenu(IEnumerable<IMenuCommand> commands)
+public sealed class MainMenu
 {
     private const string ExitOption = "Exit";
-    private readonly IReadOnlyList<IMenuCommand> _commands = commands.ToList();
+    private readonly IReadOnlyList<IMenuCommand> _commands;
+    private readonly IMenuInteraction _interaction;
+
+    /// <param name="commands">The commands to display at the root level of the menu.</param>
+    public MainMenu(IEnumerable<IMenuCommand> commands)
+        : this(commands, DefaultMenuInteraction.Instance) { }
+
+    internal MainMenu(IEnumerable<IMenuCommand> commands, IMenuInteraction interaction)
+    {
+        _commands = commands.ToList();
+        _interaction = interaction;
+    }
 
     /// <summary>
     /// Runs the menu loop, rendering choices and dispatching to the selected command,
@@ -23,7 +33,7 @@ public sealed class MainMenu(IEnumerable<IMenuCommand> commands)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            var command = MenuInteraction.Show("Main Menu", _commands, ExitOption,
+            var command = _interaction.Show("Main Menu", _commands, ExitOption,
                 static () => AnsiConsole.Write(new FigletText("TestConsoleApp").Centered().Color(Color.Blue)));
             if (command is null)
                 break;
