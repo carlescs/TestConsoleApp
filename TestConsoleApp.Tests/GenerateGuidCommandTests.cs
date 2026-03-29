@@ -103,4 +103,43 @@ public sealed class GenerateGuidCommandTests
         Assert.NotNull(attr);
         Assert.False(string.IsNullOrWhiteSpace(attr!.Description));
     }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCliCount_OutputsMultipleGuids()
+    {
+        var console = new TestConsole();
+        var command = new GenerateGuidCommand(console, new GenerateGuidSettings { Count = 3 });
+
+        await command.ExecuteAsync();
+
+        Assert.Equal(3, console.Output.Split("New GUID:", StringSplitOptions.RemoveEmptyEntries).Length - 1);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCliUppercase_OutputsUpperCaseGuids()
+    {
+        var console = new TestConsole();
+        var command = new GenerateGuidCommand(console, new GenerateGuidSettings { Uppercase = true });
+
+        await command.ExecuteAsync();
+
+        string guid = console.Output
+            .Split("New GUID:", StringSplitOptions.RemoveEmptyEntries)[1]
+            .Trim();
+        Assert.Equal(guid, guid.ToUpperInvariant());
+    }
+
+    [Fact]
+    public void ImplementsICliParameterised()
+    {
+        Assert.IsAssignableFrom<ICliParameterised>(new GenerateGuidCommand());
+    }
+
+    [Fact]
+    public void CliParameterised_SettingsType_IsGenerateGuidSettings()
+    {
+        ICliParameterised sut = new GenerateGuidCommand();
+
+        Assert.Equal(typeof(GenerateGuidSettings), sut.SettingsType);
+    }
 }

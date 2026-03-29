@@ -1,4 +1,5 @@
 using Spectre.Console;
+using Spectre.Console.Cli;
 using TestConsoleApp.Application.Abstractions;
 
 namespace TestConsoleApp.Presentation.Commands;
@@ -21,12 +22,18 @@ internal sealed record HistogramRow(int Face, int Count, double FillRatio, bool 
 [SubMenu("Utilities")]
 [Hotkey('R', ConsoleModifiers.Control)]
 [CommandDescription("Rolls one or more dice with configurable sides (default: 1d6). Press any key to roll again, Esc to exit.")]
-public sealed class RollDiceCommand(IAnsiConsole? console = null, Func<int, int, int>? roll = null) : IMenuCommand
+public sealed class RollDiceCommand(IAnsiConsole? console = null, Func<int, int, int>? roll = null, RollDiceSettings? cliSettings = null) : IMenuCommand, ICliParameterised
 {
     private const int BarWidth = 20;
 
     private readonly IAnsiConsole _console = console ?? AnsiConsole.Console;
     private readonly Func<int, int, int> _roll = roll ?? ((min, max) => Random.Shared.Next(min, max));
+    private readonly RollDiceSettings? _cliSettings = cliSettings;
+
+    Type ICliParameterised.SettingsType => typeof(RollDiceSettings);
+
+    IMenuCommand ICliParameterised.WithSettings(CommandSettings settings)
+        => new RollDiceCommand(_console, _roll, settings as RollDiceSettings);
 
     /// <inheritdoc/>
     public string Title => "Roll Dice";
@@ -36,14 +43,14 @@ public sealed class RollDiceCommand(IAnsiConsole? console = null, Func<int, int,
     {
         _console.Clear();
 
-        int sides = _console.Prompt(
+        int sides = _cliSettings?.Sides ?? _console.Prompt(
             new TextPrompt<int>("How many sides?")
                 .DefaultValue(6)
                 .Validate(n => n >= 2
                     ? ValidationResult.Success()
                     : ValidationResult.Error("[red]Must be at least 2.[/]")));
 
-        int numDice = _console.Prompt(
+        int numDice = _cliSettings?.NumDice ?? _console.Prompt(
             new TextPrompt<int>("Number of dice?")
                 .DefaultValue(1)
                 .Validate(n => n >= 1

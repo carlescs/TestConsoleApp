@@ -103,4 +103,40 @@ public sealed class SayHelloCommandTests
         Assert.NotNull(attr);
         Assert.False(string.IsNullOrWhiteSpace(attr.Description));
     }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCliName_SkipsPromptAndGreets()
+    {
+        var console = new TestConsole();
+        var command = new SayHelloCommand(console, new SayHelloSettings { Name = "Alice" });
+
+        await command.ExecuteAsync();
+
+        Assert.Contains("Hello Alice!", console.Output);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCliEmptyName_PrintsHelloWorld()
+    {
+        var console = new TestConsole();
+        var command = new SayHelloCommand(console, new SayHelloSettings { Name = "" });
+
+        await command.ExecuteAsync();
+
+        Assert.Contains("Hello world!", console.Output);
+    }
+
+    [Fact]
+    public void ImplementsICliParameterised()
+    {
+        Assert.IsAssignableFrom<ICliParameterised>(new SayHelloCommand());
+    }
+
+    [Fact]
+    public void CliParameterised_SettingsType_IsSayHelloSettings()
+    {
+        ICliParameterised sut = new SayHelloCommand();
+
+        Assert.Equal(typeof(SayHelloSettings), sut.SettingsType);
+    }
 }

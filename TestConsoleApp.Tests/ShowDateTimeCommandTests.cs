@@ -89,4 +89,29 @@ public sealed class ShowDateTimeCommandTests
         Assert.NotNull(attr);
         Assert.False(string.IsNullOrWhiteSpace(attr!.Description));
     }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCliFormat_UsesSuppliedFormat()
+    {
+        var console = new TestConsole();
+        var command = new ShowDateTimeCommand(console, new ShowDateTimeSettings { Format = "yyyy-MM-dd" });
+
+        await command.ExecuteAsync();
+
+        Assert.Contains(DateTime.Now.ToString("yyyy-MM-dd"), console.Output);
+    }
+
+    [Fact]
+    public void ImplementsICliParameterised()
+    {
+        Assert.IsAssignableFrom<ICliParameterised>(new ShowDateTimeCommand());
+    }
+
+    [Fact]
+    public void CliParameterised_SettingsType_IsShowDateTimeSettings()
+    {
+        ICliParameterised sut = new ShowDateTimeCommand();
+
+        Assert.Equal(typeof(ShowDateTimeSettings), sut.SettingsType);
+    }
 }
