@@ -12,15 +12,17 @@ public sealed class MainMenu
     private const string ExitOption = "Exit";
     private readonly IReadOnlyList<IMenuCommand> _commands;
     private readonly IMenuInteraction _interaction;
+    private readonly IAnsiConsole _console;
 
     /// <param name="commands">The commands to display at the root level of the menu.</param>
     public MainMenu(IEnumerable<IMenuCommand> commands)
-        : this(commands, DefaultMenuInteraction.Instance) { }
+        : this(commands, DefaultMenuInteraction.Instance, AnsiConsole.Console) { }
 
-    internal MainMenu(IEnumerable<IMenuCommand> commands, IMenuInteraction interaction)
+    internal MainMenu(IEnumerable<IMenuCommand> commands, IMenuInteraction interaction, IAnsiConsole? console = null)
     {
         _commands = commands.ToList();
         _interaction = interaction;
+        _console = console ?? AnsiConsole.Console;
     }
 
     /// <summary>
@@ -39,6 +41,8 @@ public sealed class MainMenu
                 break;
 
             await command.ExecuteAsync(cancellationToken);
+            _console.MarkupLine("\n[dim]Press any key to continue...[/]");
+            _console.Input.ReadKey(intercept: true);
         }
     }
 }

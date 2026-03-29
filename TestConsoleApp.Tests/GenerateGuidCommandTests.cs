@@ -52,7 +52,6 @@ public sealed class GenerateGuidCommandTests
     public async Task ExecuteAsync_OutputContainsGuidLabel()
     {
         var console = new TestConsole();
-        console.Input.PushKey(ConsoleKey.Enter);
         var command = new GenerateGuidCommand(console);
 
         await command.ExecuteAsync();
@@ -64,7 +63,6 @@ public sealed class GenerateGuidCommandTests
     public async Task ExecuteAsync_OutputContainsValidGuid()
     {
         var console = new TestConsole();
-        console.Input.PushKey(ConsoleKey.Enter);
         var command = new GenerateGuidCommand(console);
 
         await command.ExecuteAsync();
@@ -78,9 +76,7 @@ public sealed class GenerateGuidCommandTests
     public async Task ExecuteAsync_GeneratesDifferentGuidOnEachCall()
     {
         var console1 = new TestConsole();
-        console1.Input.PushKey(ConsoleKey.Enter);
         var console2 = new TestConsole();
-        console2.Input.PushKey(ConsoleKey.Enter);
 
         await new GenerateGuidCommand(console1).ExecuteAsync();
         await new GenerateGuidCommand(console2).ExecuteAsync();
@@ -89,22 +85,9 @@ public sealed class GenerateGuidCommandTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_PrintsPressAnyKeyMessage()
-    {
-        var console = new TestConsole();
-        console.Input.PushKey(ConsoleKey.Enter);
-        var command = new GenerateGuidCommand(console);
-
-        await command.ExecuteAsync();
-
-        Assert.Contains("Press any key to continue", console.Output);
-    }
-
-    [Fact]
     public async Task ExecuteAsync_DoesNotThrow()
     {
         var console = new TestConsole();
-        console.Input.PushKey(ConsoleKey.Enter);
         var command = new GenerateGuidCommand(console);
 
         var exception = await Record.ExceptionAsync(() => command.ExecuteAsync());

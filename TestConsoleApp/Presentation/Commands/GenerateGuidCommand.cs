@@ -21,8 +21,6 @@ public sealed class GenerateGuidCommand(IAnsiConsole? console = null) : IMenuCom
     {
         _console.Clear();
         _console.MarkupLine($"[bold]New GUID:[/] [green]{Guid.NewGuid()}[/]");
-        _console.MarkupLine("\n[dim]Press any key to continue...[/]");
-        _console.Input.ReadKey(intercept: true);
 
         return Task.CompletedTask;
     }

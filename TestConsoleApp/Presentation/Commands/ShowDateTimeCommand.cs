@@ -21,8 +21,6 @@ public sealed class ShowDateTimeCommand(IAnsiConsole? console = null) : IMenuCom
     {
         _console.Clear();
         _console.MarkupLine($"[bold]Current date and time:[/] [green]{DateTime.Now:F}[/]");
-        _console.MarkupLine("\n[dim]Press any key to continue...[/]");
-        _console.Input.ReadKey(intercept: true);
 
         return Task.CompletedTask;
     }

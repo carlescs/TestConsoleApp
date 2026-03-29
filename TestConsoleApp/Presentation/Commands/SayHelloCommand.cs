@@ -27,8 +27,6 @@ public sealed class SayHelloCommand(IAnsiConsole? console = null) : IMenuCommand
         string greeting = string.IsNullOrWhiteSpace(name) ? "Hello world!" : $"Hello {name}!";
 
         _console.MarkupLine($"\n[bold green]{greeting}[/]\n");
-        _console.MarkupLine("[dim]Press any key to continue...[/]");
-        _console.Input.ReadKey(intercept: true);
 
         return Task.CompletedTask;
     }

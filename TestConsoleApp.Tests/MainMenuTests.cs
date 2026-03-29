@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using TestConsoleApp.Application.Abstractions;
 using TestConsoleApp.Presentation.Menus;
 
@@ -52,7 +52,9 @@ public sealed class MainMenuTests
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
             .Returns(command, (IMenuCommand?)null);
-        var menu = new MainMenu([command], interaction);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        var menu = new MainMenu([command], interaction, console);
 
         await menu.RunAsync();
 
@@ -66,7 +68,11 @@ public sealed class MainMenuTests
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
             .Returns(command, command, command, null);
-        var menu = new MainMenu([command], interaction);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        console.Input.PushKey(ConsoleKey.Enter);
+        console.Input.PushKey(ConsoleKey.Enter);
+        var menu = new MainMenu([command], interaction, console);
 
         await menu.RunAsync();
 
@@ -108,8 +114,10 @@ public sealed class MainMenuTests
             .AndDoes(_ => cts.Cancel());
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
-            .Returns<IMenuCommand?>(command, command);
-        var menu = new MainMenu([command], interaction);
+            .Returns(command, command);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        var menu = new MainMenu([command], interaction, console);
 
         await menu.RunAsync(cts.Token);
 
@@ -128,11 +136,29 @@ public sealed class MainMenuTests
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
             .Returns(command, (IMenuCommand?)null);
-        var menu = new MainMenu([command], interaction);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        var menu = new MainMenu([command], interaction, console);
 
         await menu.RunAsync(cts.Token);
 
         Assert.Equal(cts.Token, capturedToken);
+    }
+
+    [Fact]
+    public async Task RunAsync_AfterExecutingCommand_ShowsPressAnyKeyMessage()
+    {
+        var command = Substitute.For<IMenuCommand>();
+        var interaction = Substitute.For<IMenuInteraction>();
+        interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
+            .Returns(command, (IMenuCommand?)null);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        var menu = new MainMenu([command], interaction, console);
+
+        await menu.RunAsync();
+
+        Assert.Contains("Press any key to continue", console.Output);
     }
 
     [Fact]

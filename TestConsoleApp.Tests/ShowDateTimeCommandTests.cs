@@ -52,7 +52,6 @@ public sealed class ShowDateTimeCommandTests
     public async Task ExecuteAsync_OutputContainsDateTimeLabel()
     {
         var console = new TestConsole();
-        console.Input.PushKey(ConsoleKey.Enter);
         var command = new ShowDateTimeCommand(console);
 
         await command.ExecuteAsync();
@@ -64,7 +63,6 @@ public sealed class ShowDateTimeCommandTests
     public async Task ExecuteAsync_OutputContainsCurrentYear()
     {
         var console = new TestConsole();
-        console.Input.PushKey(ConsoleKey.Enter);
         var command = new ShowDateTimeCommand(console);
 
         await command.ExecuteAsync();
@@ -73,22 +71,9 @@ public sealed class ShowDateTimeCommandTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_PrintsPressAnyKeyMessage()
-    {
-        var console = new TestConsole();
-        console.Input.PushKey(ConsoleKey.Enter);
-        var command = new ShowDateTimeCommand(console);
-
-        await command.ExecuteAsync();
-
-        Assert.Contains("Press any key to continue", console.Output);
-    }
-
-    [Fact]
     public async Task ExecuteAsync_DoesNotThrow()
     {
         var console = new TestConsole();
-        console.Input.PushKey(ConsoleKey.Enter);
         var command = new ShowDateTimeCommand(console);
 
         var exception = await Record.ExceptionAsync(() => command.ExecuteAsync());

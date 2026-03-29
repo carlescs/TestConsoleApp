@@ -52,7 +52,6 @@ public sealed class SayHelloCommandTests
     {
         var console = new TestConsole();
         console.Input.PushTextWithEnter("Alice");
-        console.Input.PushKey(ConsoleKey.Enter); // "press any key to continue"
         var command = new SayHelloCommand(console);
 
         await command.ExecuteAsync();
@@ -65,7 +64,6 @@ public sealed class SayHelloCommandTests
     {
         var console = new TestConsole();
         console.Input.PushKey(ConsoleKey.Enter); // empty TextPrompt input
-        console.Input.PushKey(ConsoleKey.Enter); // "press any key to continue"
         var command = new SayHelloCommand(console);
 
         await command.ExecuteAsync();
@@ -78,7 +76,6 @@ public sealed class SayHelloCommandTests
     {
         var console = new TestConsole();
         console.Input.PushTextWithEnter("   ");
-        console.Input.PushKey(ConsoleKey.Enter); // "press any key to continue"
         var command = new SayHelloCommand(console);
 
         await command.ExecuteAsync();
@@ -87,24 +84,10 @@ public sealed class SayHelloCommandTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_PrintsPressAnyKeyMessage()
-    {
-        var console = new TestConsole();
-        console.Input.PushTextWithEnter("Bob");
-        console.Input.PushKey(ConsoleKey.Enter);
-        var command = new SayHelloCommand(console);
-
-        await command.ExecuteAsync();
-
-        Assert.Contains("Press any key to continue", console.Output);
-    }
-
-    [Fact]
     public async Task ExecuteAsync_DoesNotThrow()
     {
         var console = new TestConsole();
         console.Input.PushTextWithEnter("Test");
-        console.Input.PushKey(ConsoleKey.Enter);
         var command = new SayHelloCommand(console);
 
         var exception = await Record.ExceptionAsync(() => command.ExecuteAsync());
