@@ -60,7 +60,7 @@ public sealed class CommandRegistrationGenerator : IIncrementalGenerator
             return null;
 
         var hasParameterlessConstructor = symbol.InstanceConstructors.Any(c =>
-            c.Parameters.IsEmpty &&
+            (c.Parameters.IsEmpty || c.Parameters.All(p => p.HasExplicitDefaultValue)) &&
             c.DeclaredAccessibility == Accessibility.Public);
 
         if (!hasParameterlessConstructor)

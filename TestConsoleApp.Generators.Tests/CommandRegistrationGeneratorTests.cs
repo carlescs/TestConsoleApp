@@ -356,6 +356,31 @@ public sealed class CommandRegistrationGeneratorTests
     }
 
     [Fact]
+    public void GeneratesRegistration_ForCommandWithAllOptionalConstructorParameters()
+    {
+        // Primary constructors with optional params (e.g. IAnsiConsole? console = null) must be
+        // treated as effectively parameterless — they are callable with new FooCommand().
+        var source = """
+            using TestConsoleApp.Application.Abstractions;
+            namespace MyCommands
+            {
+                public sealed class FooCommand : IMenuCommand
+                {
+                    public FooCommand(string name = "default") { }
+                    public string Title => "Foo";
+                    public System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken ct = default)
+                        => System.Threading.Tasks.Task.CompletedTask;
+                }
+            }
+            """;
+
+        var (_, sources) = RunGenerator(source);
+
+        Assert.Single(sources);
+        Assert.Contains("CommandRegistry.Register(new FooCommand());", sources[0].SourceText.ToString());
+    }
+
+    [Fact]
     public void EscapesDoubleQuotesInSubMenuName()
     {
         var source = """"

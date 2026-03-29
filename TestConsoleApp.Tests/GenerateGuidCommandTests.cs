@@ -40,12 +40,12 @@ public sealed class GenerateGuidCommandTests
     }
 
     [Fact]
-    public void HasHotkeyAttribute_WithNoModifiers()
+    public void HasHotkeyAttribute_WithControlModifier()
     {
         var attr = typeof(GenerateGuidCommand).GetCustomAttribute<HotkeyAttribute>();
 
         Assert.NotNull(attr);
-        Assert.Equal(default, attr!.Modifiers);
+        Assert.Equal(ConsoleModifiers.Control, attr!.Modifiers);
     }
 
     [Fact]

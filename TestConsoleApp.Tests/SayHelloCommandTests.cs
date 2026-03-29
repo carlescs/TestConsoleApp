@@ -31,12 +31,12 @@ public sealed class SayHelloCommandTests
     }
 
     [Fact]
-    public void HasHotkeyAttribute_WithNoModifiers()
+    public void HasHotkeyAttribute_WithControlModifier()
     {
         var attr = typeof(SayHelloCommand).GetCustomAttribute<HotkeyAttribute>();
 
         Assert.NotNull(attr);
-        Assert.Equal(default, attr.Modifiers);
+        Assert.Equal(ConsoleModifiers.Control, attr.Modifiers);
     }
 
     [Fact]

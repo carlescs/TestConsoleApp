@@ -27,6 +27,7 @@ internal static class MenuInteraction
             if (keyInfo.Key == ConsoleKey.UpArrow) { selectedIndex = (selectedIndex - 1 + totalItems) % totalItems; continue; }
             if (keyInfo.Key == ConsoleKey.DownArrow) { selectedIndex = (selectedIndex + 1) % totalItems; continue; }
             if (keyInfo.Key == ConsoleKey.Enter) return selectedIndex == commands.Count ? null : commands[selectedIndex];
+            if (keyInfo.Key == ConsoleKey.Escape) return null;
 
             // Local hotkey dispatch
             for (var i = 0; i < hotkeys.Length; i++)
@@ -72,7 +73,7 @@ internal static class MenuInteraction
             ? $" [bold]>[/] {exitPad} [bold]{Markup.Escape(exitLabel)}[/]"
             : $"   {exitPad} {Markup.Escape(exitLabel)}");
 
-        AnsiConsole.MarkupLine("\n[dim]↑↓ navigate  Enter select  hotkey/global dispatch  ^=Ctrl ~=Alt[/]");
+        AnsiConsole.MarkupLine("\n[dim]↑↓ navigate  Enter select  Esc back  ^=Ctrl ~=Alt  hotkey/global dispatch[/]");
     }
 
     internal static string BuildBadgeMarkup(char key, ConsoleModifiers modifiers)

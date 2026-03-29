@@ -7,7 +7,7 @@ namespace TestConsoleApp.Presentation.Commands;
 /// A menu command in the <c>Utilities</c> submenu that displays the current date and time.
 /// </summary>
 [SubMenu("Utilities")]
-[Hotkey('D')]
+[Hotkey('D', ConsoleModifiers.Control)]
 public sealed class ShowDateTimeCommand(IAnsiConsole? console = null) : IMenuCommand
 {
     private readonly IAnsiConsole _console = console ?? AnsiConsole.Console;
