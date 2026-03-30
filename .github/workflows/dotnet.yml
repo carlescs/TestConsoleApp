@@ -45,11 +45,11 @@ jobs:
       run: dotnet test --no-build --verbosity normal -c Release
 
     - name: Pack
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
       run: dotnet pack TestConsoleApp/TestConsoleApp.csproj --no-restore -c Release -o ./artifacts
 
     - name: Push to GitHub Packages
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
       run: >
         dotnet nuget push ./artifacts/*.nupkg
         --source "https://nuget.pkg.github.com/carlescs/index.json"
