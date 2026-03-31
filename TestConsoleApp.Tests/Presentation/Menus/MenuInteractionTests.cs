@@ -1,6 +1,6 @@
 using TestConsoleApp.Presentation.Menus;
 
-namespace TestConsoleApp.Tests;
+namespace TestConsoleApp.Tests.Presentation.Menus;
 
 public sealed class MenuInteractionTests
 {

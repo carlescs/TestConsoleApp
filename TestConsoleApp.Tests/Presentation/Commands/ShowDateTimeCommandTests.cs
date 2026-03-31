@@ -3,7 +3,7 @@ using Spectre.Console.Testing;
 using TestConsoleApp.Application.Abstractions;
 using TestConsoleApp.Presentation.Commands;
 
-namespace TestConsoleApp.Tests;
+namespace TestConsoleApp.Tests.Presentation.Commands;
 
 public sealed class ShowDateTimeCommandTests
 {

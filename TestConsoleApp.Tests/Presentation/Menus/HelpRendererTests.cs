@@ -2,7 +2,7 @@ using NSubstitute;
 using TestConsoleApp.Application.Abstractions;
 using TestConsoleApp.Presentation.Menus;
 
-namespace TestConsoleApp.Tests;
+namespace TestConsoleApp.Tests.Presentation.Menus;
 
 public sealed class HelpRendererTests
 {

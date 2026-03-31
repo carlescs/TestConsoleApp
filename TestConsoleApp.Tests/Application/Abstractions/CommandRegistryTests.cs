@@ -2,7 +2,7 @@ using System.Reflection;
 using NSubstitute;
 using TestConsoleApp.Application.Abstractions;
 
-namespace TestConsoleApp.Tests;
+namespace TestConsoleApp.Tests.Application.Abstractions;
 
 public sealed class CommandRegistryTests : IDisposable
 {

@@ -4,7 +4,7 @@ using TestConsoleApp.Application.Abstractions;
 using TestConsoleApp.Presentation.Cli;
 using TestConsoleApp.Presentation.Menus;
 
-namespace TestConsoleApp.Tests;
+namespace TestConsoleApp.Tests.Presentation.Cli;
 
 public sealed class CliCommandBuilderTests
 {
