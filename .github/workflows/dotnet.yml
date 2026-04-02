@@ -42,7 +42,21 @@ jobs:
       run: dotnet build --no-restore -c Release
 
     - name: Test
-      run: dotnet test --no-build --verbosity normal -c Release
+      run: dotnet test --no-build --verbosity normal -c Release --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+    - name: Generate coverage report
+      run: |
+        dotnet tool install --global dotnet-reportgenerator-globaltool
+        reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" -targetdir:"./coverage/report" -reporttypes:"HtmlInline;Cobertura;MarkdownSummaryGithub"
+
+    - name: Write coverage summary to job summary
+      run: cat ./coverage/report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: ./coverage/report
 
     - name: Pack
       if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
