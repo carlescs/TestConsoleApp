@@ -2,6 +2,7 @@ using System.Reflection;
 using Spectre.Console.Testing;
 using TestConsoleApp.Application.Abstractions;
 using TestConsoleApp.Presentation.Commands;
+using TestConsoleApp.Presentation.Commands.GenerateGuid;
 
 namespace TestConsoleApp.Tests.Presentation.Commands;
 
@@ -141,5 +142,42 @@ public sealed class GenerateGuidCommandTests
         ICliParameterised sut = new GenerateGuidCommand();
 
         Assert.Equal(typeof(GenerateGuidSettings), sut.SettingsType);
+    }
+
+    [Fact]
+    public async Task CliParameterised_WithSettings_AppliesCountToOutput()
+    {
+        var console = new TestConsole();
+        ICliParameterised sut = new GenerateGuidCommand(console);
+
+        var configured = sut.WithSettings(new GenerateGuidSettings { Count = 2 });
+        await configured.ExecuteAsync();
+
+        Assert.Equal(2, console.Output.Split("New GUID:", StringSplitOptions.RemoveEmptyEntries).Length - 1);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DefaultCount_OutputsOneGuid()
+    {
+        var console = new TestConsole();
+        var command = new GenerateGuidCommand(console);
+
+        await command.ExecuteAsync();
+
+        Assert.Equal(1, console.Output.Split("New GUID:", StringSplitOptions.RemoveEmptyEntries).Length - 1);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DefaultUppercase_OutputsLowercaseGuid()
+    {
+        var console = new TestConsole();
+        var command = new GenerateGuidCommand(console);
+
+        await command.ExecuteAsync();
+
+        string guid = console.Output
+            .Split("New GUID:", StringSplitOptions.RemoveEmptyEntries)[1]
+            .Trim();
+        Assert.Equal(guid, guid.ToLowerInvariant());
     }
 }

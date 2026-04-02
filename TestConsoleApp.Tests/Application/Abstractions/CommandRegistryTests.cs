@@ -250,6 +250,20 @@ public sealed class CommandRegistryTests : IDisposable
             CommandRegistry.GetDescription(new DescribedCommand()));
     }
 
+    [Fact]
+    public void GetHotkey_ReturnsHotkey_ForDifferentInstanceOfSameType()
+    {
+        var cmd1 = new DescribedCommand();
+        CommandRegistry.RegisterHotkey('H', ConsoleModifiers.Control, cmd1);
+        var cmd2 = new DescribedCommand();
+
+        var result = CommandRegistry.GetHotkey(cmd2);
+
+        Assert.NotNull(result);
+        Assert.Equal('H', result!.Value.Key);
+        Assert.Equal(ConsoleModifiers.Control, result.Value.Modifiers);
+    }
+
     [CommandDescription("A described command.")]
     private sealed class DescribedCommand : IMenuCommand
     {

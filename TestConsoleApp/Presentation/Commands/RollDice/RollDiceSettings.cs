@@ -2,7 +2,7 @@ using System.ComponentModel;
 using Spectre.Console.Cli;
 using TestConsoleApp.Application.Abstractions;
 
-namespace TestConsoleApp.Presentation.Commands;
+namespace TestConsoleApp.Presentation.Commands.RollDice;
 
 /// <summary>CLI settings for <see cref="RollDiceCommand"/>.</summary>
 public sealed class RollDiceSettings : MenuCommandSettings

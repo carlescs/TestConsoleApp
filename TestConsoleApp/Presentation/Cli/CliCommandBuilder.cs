@@ -13,10 +13,10 @@ namespace TestConsoleApp.Presentation.Cli;
 /// </summary>
 internal static partial class CliCommandBuilder
 {
-    private static readonly MethodInfo s_registerRootMethod =
+    private static readonly MethodInfo _sRegisterRootMethod =
         typeof(CliCommandBuilder).GetMethod("RegisterRootTyped", BindingFlags.NonPublic | BindingFlags.Static)!;
 
-    private static readonly MethodInfo s_registerBranchMethod =
+    private static readonly MethodInfo _sRegisterBranchMethod =
         typeof(CliCommandBuilder).GetMethod("RegisterBranchTyped", BindingFlags.NonPublic | BindingFlags.Static)!;
     /// <summary>
     /// Registers all commands from <paramref name="commands"/> into the root
@@ -38,18 +38,22 @@ internal static partial class CliCommandBuilder
             else
             {
                 var c = command;
-                var name = ToKebabCase(c.Title);
-                var description = CommandRegistry.GetDescription(c) ?? c.Title;
+                string name = ToKebabCase(c.Title);
+                string description = CommandRegistry.GetDescription(c) ?? c.Title;
 
                 if (c is ICliParameterised cliParam)
-                    s_registerRootMethod.MakeGenericMethod(cliParam.SettingsType)
+                {
+                    _sRegisterRootMethod.MakeGenericMethod(cliParam.SettingsType)
                         .Invoke(null, [config, name, cliParam, description]);
+                }
                 else
+                {
                     config.AddDelegate<MenuCommandSettings>(name, (_, _, ct) =>
                     {
                         c.ExecuteAsync(ct).GetAwaiter().GetResult();
                         return 0;
                     }).WithDescription(description);
+                }
             }
         }
     }
@@ -71,20 +75,46 @@ internal static partial class CliCommandBuilder
             else
             {
                 var c = command;
-                var name = ToKebabCase(c.Title);
-                var description = CommandRegistry.GetDescription(c) ?? c.Title;
+                string name = ToKebabCase(c.Title);
+                string description = CommandRegistry.GetDescription(c) ?? c.Title;
 
                 if (c is ICliParameterised cliParam)
-                    s_registerBranchMethod.MakeGenericMethod(cliParam.SettingsType)
+                {
+                    _sRegisterBranchMethod.MakeGenericMethod(cliParam.SettingsType)
                         .Invoke(null, [config, name, cliParam, description]);
+                }
                 else
+                {
                     config.AddDelegate<MenuCommandSettings>(name, (_, _, ct) =>
                     {
                         c.ExecuteAsync(ct).GetAwaiter().GetResult();
                         return 0;
                     }).WithDescription(description);
+                }
             }
         }
+    }
+
+    private static void RegisterRootTyped<TSettings>(
+        IConfigurator config, string name, ICliParameterised cliParam, string description)
+        where TSettings : MenuCommandSettings
+    {
+        config.AddDelegate<TSettings>(name, (_, settings, ct) =>
+        {
+            cliParam.WithSettings(settings).ExecuteAsync(ct).GetAwaiter().GetResult();
+            return 0;
+        }).WithDescription(description);
+    }
+
+    private static void RegisterBranchTyped<TSettings>(
+        IConfigurator<MenuCommandSettings> config, string name, ICliParameterised cliParam, string description)
+        where TSettings : MenuCommandSettings
+    {
+        config.AddDelegate<TSettings>(name, (_, settings, ct) =>
+        {
+            cliParam.WithSettings(settings).ExecuteAsync(ct).GetAwaiter().GetResult();
+            return 0;
+        }).WithDescription(description);
     }
 
     /// <summary>Converts a human-readable title into a kebab-case CLI command name.</summary>
@@ -93,28 +123,6 @@ internal static partial class CliCommandBuilder
     private static string ToKebabCase(string title) =>
         NonAlphanumericRegex().Replace(title.Trim().ToLowerInvariant(), "-").Trim('-');
 
-    private static void RegisterRootTyped<TSettings>(
-        IConfigurator config, string name, ICliParameterised command, string? description)
-        where TSettings : CommandSettings
-    {
-        config.AddDelegate<TSettings>(name, (_, settings, ct) =>
-        {
-            command.WithSettings(settings).ExecuteAsync(ct).GetAwaiter().GetResult();
-            return 0;
-        }).WithDescription(description ?? string.Empty);
-    }
-
-    private static void RegisterBranchTyped<TSettings>(
-        IConfigurator<MenuCommandSettings> config, string name, ICliParameterised command, string? description)
-        where TSettings : MenuCommandSettings
-    {
-        config.AddDelegate<TSettings>(name, (_, settings, ct) =>
-        {
-            command.WithSettings(settings).ExecuteAsync(ct).GetAwaiter().GetResult();
-            return 0;
-        }).WithDescription(description ?? string.Empty);
-    }
-
-    [GeneratedRegex(@"[^a-z0-9]+")]
+    [GeneratedRegex("[^a-z0-9]+")]
     private static partial Regex NonAlphanumericRegex();
 }

@@ -2,7 +2,7 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using TestConsoleApp.Application.Abstractions;
 
-namespace TestConsoleApp.Presentation.Commands;
+namespace TestConsoleApp.Presentation.Commands.RollDice;
 
 /// <summary>
 /// Holds the histogram data for a single face value of the dice.

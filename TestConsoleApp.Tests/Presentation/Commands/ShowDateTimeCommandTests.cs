@@ -2,6 +2,7 @@ using System.Reflection;
 using Spectre.Console.Testing;
 using TestConsoleApp.Application.Abstractions;
 using TestConsoleApp.Presentation.Commands;
+using TestConsoleApp.Presentation.Commands.ShowDateTime;
 
 namespace TestConsoleApp.Tests.Presentation.Commands;
 
@@ -113,5 +114,18 @@ public sealed class ShowDateTimeCommandTests
         ICliParameterised sut = new ShowDateTimeCommand();
 
         Assert.Equal(typeof(ShowDateTimeSettings), sut.SettingsType);
+    }
+
+    [Fact]
+    public async Task CliParameterised_WithSettings_AppliesFormatToOutput()
+    {
+        var console = new TestConsole();
+        ICliParameterised sut = new ShowDateTimeCommand(console);
+        const string format = "yyyy";
+
+        var configured = sut.WithSettings(new ShowDateTimeSettings { Format = format });
+        await configured.ExecuteAsync();
+
+        Assert.Contains(DateTime.Now.ToString(format), console.Output);
     }
 }

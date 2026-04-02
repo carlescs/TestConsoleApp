@@ -2,7 +2,7 @@ using System.ComponentModel;
 using Spectre.Console.Cli;
 using TestConsoleApp.Application.Abstractions;
 
-namespace TestConsoleApp.Presentation.Commands;
+namespace TestConsoleApp.Presentation.Commands.GenerateGuid;
 
 /// <summary>CLI settings for <see cref="GenerateGuidCommand"/>.</summary>
 public sealed class GenerateGuidSettings : MenuCommandSettings

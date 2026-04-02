@@ -2,6 +2,7 @@ using System.Reflection;
 using Spectre.Console.Testing;
 using TestConsoleApp.Application.Abstractions;
 using TestConsoleApp.Presentation.Commands;
+using TestConsoleApp.Presentation.Commands.SayHello;
 
 namespace TestConsoleApp.Tests.Presentation.Commands;
 
@@ -138,5 +139,17 @@ public sealed class SayHelloCommandTests
         ICliParameterised sut = new SayHelloCommand();
 
         Assert.Equal(typeof(SayHelloSettings), sut.SettingsType);
+    }
+
+    [Fact]
+    public async Task CliParameterised_WithSettings_GreetsWithProvidedName()
+    {
+        var console = new TestConsole();
+        ICliParameterised sut = new SayHelloCommand(console);
+
+        var configured = sut.WithSettings(new SayHelloSettings { Name = "Bob" });
+        await configured.ExecuteAsync();
+
+        Assert.Contains("Hello Bob!", console.Output);
     }
 }

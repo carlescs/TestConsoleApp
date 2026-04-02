@@ -2,6 +2,7 @@ using System.Reflection;
 using Spectre.Console.Testing;
 using TestConsoleApp.Application.Abstractions;
 using TestConsoleApp.Presentation.Commands;
+using TestConsoleApp.Presentation.Commands.RollDice;
 
 namespace TestConsoleApp.Tests.Presentation.Commands;
 
@@ -454,5 +455,65 @@ public sealed class RollDiceCommandTests
 
         Assert.Equal(2, rows[0].Face);
         Assert.Equal(12, rows[^1].Face);
+    }
+
+    // -------------------------------------------------------------------------
+    // ICliParameterised
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ImplementsICliParameterised()
+    {
+        Assert.IsAssignableFrom<ICliParameterised>(new RollDiceCommand());
+    }
+
+    [Fact]
+    public void CliParameterised_SettingsType_IsRollDiceSettings()
+    {
+        ICliParameterised sut = new RollDiceCommand();
+
+        Assert.Equal(typeof(RollDiceSettings), sut.SettingsType);
+    }
+
+    [Fact]
+    public async Task CliParameterised_WithSettings_AppliesCliSidesToRoll()
+    {
+        var console = new TestConsole();
+        console.Input.PushKey(ConsoleKey.Escape);
+        int capturedMax = 0;
+        ICliParameterised sut = new RollDiceCommand(console, roll: (min, max) => { capturedMax = max; return min; });
+
+        var configured = sut.WithSettings(new RollDiceSettings { Sides = 12, NumDice = 1 });
+        await configured.ExecuteAsync();
+
+        Assert.Equal(13, capturedMax); // sides + 1 = 12 + 1
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCliSides_SkipsPromptAndUsesSpecifiedSides()
+    {
+        var console = new TestConsole();
+        console.Input.PushKey(ConsoleKey.Escape);
+        int capturedMax = 0;
+
+        await new RollDiceCommand(console,
+            roll: (min, max) => { capturedMax = max; return min; },
+            cliSettings: new RollDiceSettings { Sides = 10, NumDice = 1 }).ExecuteAsync();
+
+        Assert.Equal(11, capturedMax); // sides + 1 = 10 + 1
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCliNumDice_SkipsPromptAndUsesSpecifiedNumDice()
+    {
+        var console = new TestConsole();
+        console.Input.PushKey(ConsoleKey.Escape);
+        int callCount = 0;
+
+        await new RollDiceCommand(console,
+            roll: (_, _) => { callCount++; return 1; },
+            cliSettings: new RollDiceSettings { Sides = 6, NumDice = 4 }).ExecuteAsync();
+
+        Assert.Equal(4, callCount); // one roll call per die
     }
 }

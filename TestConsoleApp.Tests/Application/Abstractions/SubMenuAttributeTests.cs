@@ -1,4 +1,3 @@
-using System.Reflection;
 using TestConsoleApp.Application.Abstractions;
 
 namespace TestConsoleApp.Tests.Application.Abstractions;

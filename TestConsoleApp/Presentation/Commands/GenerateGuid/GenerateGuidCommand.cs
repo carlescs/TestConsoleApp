@@ -2,7 +2,7 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using TestConsoleApp.Application.Abstractions;
 
-namespace TestConsoleApp.Presentation.Commands;
+namespace TestConsoleApp.Presentation.Commands.GenerateGuid;
 
 /// <summary>
 /// A menu command in the <c>Utilities</c> submenu that generates and displays a new <see cref="Guid"/>.

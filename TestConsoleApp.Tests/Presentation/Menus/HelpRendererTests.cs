@@ -216,6 +216,16 @@ public sealed class HelpRendererTests
         Assert.Equal("SubCmd", sections[1].Entries[0].Title);
     }
 
+    [Fact]
+    public void BuildSections_EntryDescription_IsPopulated_WhenCommandHasDescriptionAttribute()
+    {
+        var cmd = new DescribedHelpCommand();
+
+        var sections = HelpRenderer.BuildSections([cmd]);
+
+        Assert.Equal("A help test command.", sections[0].Entries[0].Description);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -225,5 +235,12 @@ public sealed class HelpRendererTests
         var cmd = Substitute.For<IMenuCommand>();
         cmd.Title.Returns(title);
         return cmd;
+    }
+
+    [CommandDescription("A help test command.")]
+    private sealed class DescribedHelpCommand : IMenuCommand
+    {
+        public string Title => "Help Test Command";
+        public Task ExecuteAsync(CancellationToken ct = default) => Task.CompletedTask;
     }
 }

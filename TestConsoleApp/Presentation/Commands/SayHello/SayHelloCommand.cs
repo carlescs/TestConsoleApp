@@ -2,7 +2,7 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using TestConsoleApp.Application.Abstractions;
 
-namespace TestConsoleApp.Presentation.Commands;
+namespace TestConsoleApp.Presentation.Commands.SayHello;
 
 /// <summary>
 /// A root-level menu command that prompts the user for their name and prints a personalised greeting.
