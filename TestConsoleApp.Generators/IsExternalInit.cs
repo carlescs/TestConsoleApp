@@ -1,5 +1,6 @@
 // Required polyfill so that 'record struct' (C# 10+) compiles when targeting netstandard2.0.
-namespace TestConsoleApp.Generators
-{
-    internal static class IsExternalInit { }
-}
+// ReSharper disable once CheckNamespace
+namespace System.Runtime.CompilerServices;
+
+// ReSharper disable once UnusedType.Global
+internal static class IsExternalInit { }
