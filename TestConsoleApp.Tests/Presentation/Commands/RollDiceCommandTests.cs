@@ -516,4 +516,80 @@ public sealed class RollDiceCommandTests
 
         Assert.Equal(4, callCount); // one roll call per die
     }
+
+    // -------------------------------------------------------------------------
+    // Initial throws
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task ExecuteAsync_WithInitialThrows_RollIsCalledForEachInitialThrow()
+    {
+        var console = new TestConsole();
+        console.Input.PushKey(ConsoleKey.Escape);
+        int callCount = 0;
+
+        await new RollDiceCommand(console,
+            roll: (_, _) => { callCount++; return 1; },
+            cliSettings: new RollDiceSettings { Sides = 6, NumDice = 1, InitialThrows = 3 }).ExecuteAsync();
+
+        Assert.Equal(4, callCount); // 3 initial + 1 interactive roll
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInitialThrows_TotalRollCounterIncludesInitialThrows()
+    {
+        var console = new TestConsole();
+        console.Input.PushKey(ConsoleKey.Escape);
+
+        await new RollDiceCommand(console,
+            roll: (_, _) => 1,
+            cliSettings: new RollDiceSettings { Sides = 6, NumDice = 1, InitialThrows = 4 }).ExecuteAsync();
+
+        Assert.Contains("#5", console.Output); // 4 initial + 1 interactive = roll #5
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithZeroInitialThrows_RollIsCalledOnceForFirstInteractiveRoll()
+    {
+        var console = new TestConsole();
+        console.Input.PushKey(ConsoleKey.Escape);
+        int callCount = 0;
+
+        await new RollDiceCommand(console,
+            roll: (_, _) => { callCount++; return 1; },
+            cliSettings: new RollDiceSettings { Sides = 6, NumDice = 1, InitialThrows = 0 }).ExecuteAsync();
+
+        Assert.Equal(1, callCount);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInitialThrows_HistogramIsPreSeededBeforeInteractiveRoll()
+    {
+        var console = new TestConsole();
+        console.Input.PushKey(ConsoleKey.Escape);
+        int callIndex = 0;
+        // initial throws always return 1; interactive roll returns 6
+        int[] returns = [1, 1, 6];
+
+        await new RollDiceCommand(console,
+            roll: (_, _) => returns[callIndex++],
+            cliSettings: new RollDiceSettings { Sides = 6, NumDice = 1, InitialThrows = 2 }).ExecuteAsync();
+
+        // Face 1 was rolled twice in pre-rolls; its bar must appear with count 2
+        Assert.Contains("2", console.Output);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_NoCliSettings_DefaultInitialThrowsIsZero()
+    {
+        var console = new TestConsole();
+        console.Input.PushTextWithEnter("6");
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Escape);
+        int callCount = 0;
+
+        await new RollDiceCommand(console, roll: (_, _) => { callCount++; return 1; }).ExecuteAsync();
+
+        Assert.Equal(1, callCount); // only 1 interactive roll, no initial throws
+    }
 }

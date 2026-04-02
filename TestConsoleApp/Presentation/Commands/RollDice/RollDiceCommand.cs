@@ -57,8 +57,18 @@ public sealed class RollDiceCommand(IAnsiConsole? console = null, Func<int, int,
                     ? ValidationResult.Success()
                     : ValidationResult.Error("[red]Must be at least 1.[/]")));
 
+        int initialThrows = _cliSettings?.InitialThrows ?? 0;
+
         var counts = new Dictionary<int, int>();
         int totalRolls = 0;
+
+        for (int i = 0; i < initialThrows; i++)
+        {
+            int[] preRolls = Enumerable.Range(0, numDice).Select(_ => _roll(1, sides + 1)).ToArray();
+            int preResult = preRolls.Sum();
+            counts[preResult] = counts.GetValueOrDefault(preResult) + 1;
+            totalRolls++;
+        }
 
         while (!cancellationToken.IsCancellationRequested)
         {

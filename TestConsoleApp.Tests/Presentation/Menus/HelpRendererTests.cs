@@ -139,8 +139,8 @@ public sealed class HelpRendererTests
         var sections = HelpRenderer.BuildSections([outer]);
 
         Assert.Equal(2, sections.Count);
-        Assert.Equal(1, sections[0].Entries.Count); // "Shallow" under "Outer"
-        Assert.Equal(1, sections[1].Entries.Count); // "Deep" under "Inner"
+        Assert.Single(sections[0].Entries); // "Shallow" under "Outer"
+        Assert.Single(sections[1].Entries); // "Deep" under "Inner"
     }
 
     [Fact]
