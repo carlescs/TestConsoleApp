@@ -57,33 +57,50 @@ public sealed class RollDiceCommand(IAnsiConsole? console = null, Func<int, int,
                     ? ValidationResult.Success()
                     : ValidationResult.Error("[red]Must be at least 1.[/]")));
 
-        int initialThrows = _cliSettings?.InitialThrows ?? 0;
+        int initialThrows = _cliSettings != null
+            ? (_cliSettings.InitialThrows ?? 0)
+            : _console.Prompt(
+                new TextPrompt<int>("Number of throws?")
+                    .DefaultValue(0)
+                    .Validate(n => n >= 0
+                        ? ValidationResult.Success()
+                        : ValidationResult.Error("[red]Must be at least 0.[/]")));
 
         var counts = new Dictionary<int, int>();
         int totalRolls = 0;
+        int[] lastRolls = [];
+        int lastResult = 0;
+        bool needsRoll = initialThrows == 0;
 
         for (int i = 0; i < initialThrows; i++)
         {
-            int[] preRolls = Enumerable.Range(0, numDice).Select(_ => _roll(1, sides + 1)).ToArray();
-            int preResult = preRolls.Sum();
-            counts[preResult] = counts.GetValueOrDefault(preResult) + 1;
+            lastRolls = Enumerable.Range(0, numDice).Select(_ => _roll(1, sides + 1)).ToArray();
+            lastResult = lastRolls.Sum();
+            counts[lastResult] = counts.GetValueOrDefault(lastResult) + 1;
             totalRolls++;
         }
 
         while (!cancellationToken.IsCancellationRequested)
         {
             _console.Clear();
-            int[] rolls = Enumerable.Range(0, numDice).Select(_ => _roll(1, sides + 1)).ToArray();
-            int result = rolls.Sum();
-            counts[result] = counts.GetValueOrDefault(result) + 1;
-            totalRolls++;
+            if (needsRoll)
+            {
+                lastRolls = Enumerable.Range(0, numDice).Select(_ => _roll(1, sides + 1)).ToArray();
+                lastResult = lastRolls.Sum();
+                counts[lastResult] = counts.GetValueOrDefault(lastResult) + 1;
+                totalRolls++;
+            }
+            else
+            {
+                needsRoll = true;
+            }
 
             string label = numDice == 1 ? $"a {sides}-sided dice" : $"{numDice}d{sides}";
-            _console.MarkupLine($"[bold]Rolling {label}:[/] [bold green]{result}[/] [dim](#{totalRolls})[/]");
+            _console.MarkupLine($"[bold]Rolling {label}:[/] [bold green]{lastResult}[/] [dim](#{totalRolls})[/]");
             if (numDice > 1)
-                _console.MarkupLine($"[dim]  ({string.Join(", ", rolls)})[/]");
+                _console.MarkupLine($"[dim]  ({string.Join(", ", lastRolls)})[/]");
             _console.WriteLine();
-            RenderHistogram(BuildHistogramData(counts, numDice, numDice * sides, result));
+            RenderHistogram(BuildHistogramData(counts, numDice, numDice * sides, lastResult));
             _console.MarkupLine("\n[dim]Any key to roll again  \u00b7  Esc to exit[/]");
             if (_console.Input.ReadKey(intercept: true)?.Key == ConsoleKey.Escape)
                 break;

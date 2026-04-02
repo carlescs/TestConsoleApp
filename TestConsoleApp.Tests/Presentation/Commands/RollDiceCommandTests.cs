@@ -64,6 +64,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 3).ExecuteAsync();
@@ -77,6 +78,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 4).ExecuteAsync();
@@ -90,6 +92,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 6
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
         int capturedMax = 0;
 
@@ -104,6 +107,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("10");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
         int capturedMin = 0;
 
@@ -118,6 +122,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("20");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
         int capturedMax = 0;
 
@@ -132,6 +137,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("20");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 1).ExecuteAsync();
@@ -146,6 +152,7 @@ public sealed class RollDiceCommandTests
         console.Input.PushTextWithEnter("1"); // invalid: less than 2
         console.Input.PushTextWithEnter("8"); // valid
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 5).ExecuteAsync();
@@ -159,6 +166,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 3).ExecuteAsync();
@@ -172,6 +180,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         var exception = await Record.ExceptionAsync(
@@ -186,6 +195,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Enter);  // roll again
         console.Input.PushKey(ConsoleKey.Escape); // exit
         int rollCount = 0;
@@ -201,6 +211,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
         int rollCount = 0;
 
@@ -219,6 +230,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("3"); // 3-sided dice
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 2).ExecuteAsync();
@@ -233,6 +245,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 3).ExecuteAsync();
@@ -246,6 +259,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Enter);  // roll again
         console.Input.PushKey(ConsoleKey.Escape); // exit
 
@@ -363,6 +377,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");  // sides
         console.Input.PushTextWithEnter("2");  // 2 dice
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 3).ExecuteAsync();
@@ -376,6 +391,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // default 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 3).ExecuteAsync();
@@ -389,6 +405,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");  // sides
         console.Input.PushTextWithEnter("3");  // 3 dice
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
         int callCount = 0;
 
@@ -403,6 +420,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("10"); // sides
         console.Input.PushTextWithEnter("2");  // 2 dice, each returns 4 → sum 8
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 4).ExecuteAsync();
@@ -416,6 +434,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");  // sides
         console.Input.PushTextWithEnter("2");  // 2 dice
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
         int callIndex = 0;
         int[] returns = [3, 5];
@@ -431,6 +450,7 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // default 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
 
         await new RollDiceCommand(console, roll: (_, _) => 4).ExecuteAsync();
@@ -532,7 +552,7 @@ public sealed class RollDiceCommandTests
             roll: (_, _) => { callCount++; return 1; },
             cliSettings: new RollDiceSettings { Sides = 6, NumDice = 1, InitialThrows = 3 }).ExecuteAsync();
 
-        Assert.Equal(4, callCount); // 3 initial + 1 interactive roll
+        Assert.Equal(3, callCount); // 3 initial throws, no extra interactive roll
     }
 
     [Fact]
@@ -545,7 +565,7 @@ public sealed class RollDiceCommandTests
             roll: (_, _) => 1,
             cliSettings: new RollDiceSettings { Sides = 6, NumDice = 1, InitialThrows = 4 }).ExecuteAsync();
 
-        Assert.Contains("#5", console.Output); // 4 initial + 1 interactive = roll #5
+        Assert.Contains("#4", console.Output); // 4 initial throws shown directly
     }
 
     [Fact]
@@ -585,11 +605,41 @@ public sealed class RollDiceCommandTests
         var console = new TestConsole();
         console.Input.PushTextWithEnter("6");
         console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 0 throws
         console.Input.PushKey(ConsoleKey.Escape);
         int callCount = 0;
 
         await new RollDiceCommand(console, roll: (_, _) => { callCount++; return 1; }).ExecuteAsync();
 
         Assert.Equal(1, callCount); // only 1 interactive roll, no initial throws
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_InteractiveThrows_RollIsCalledForEachThrow()
+    {
+        var console = new TestConsole();
+        console.Input.PushTextWithEnter("6");  // sides
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushTextWithEnter("3");  // 3 throws
+        console.Input.PushKey(ConsoleKey.Escape);
+        int callCount = 0;
+
+        await new RollDiceCommand(console, roll: (_, _) => { callCount++; return 1; }).ExecuteAsync();
+
+        Assert.Equal(3, callCount); // 3 throws, no extra interactive roll
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_InteractiveThrows_TotalRollCounterIncludesThrows()
+    {
+        var console = new TestConsole();
+        console.Input.PushTextWithEnter("6");  // sides
+        console.Input.PushKey(ConsoleKey.Enter); // accept default of 1 die
+        console.Input.PushTextWithEnter("4");  // 4 throws
+        console.Input.PushKey(ConsoleKey.Escape);
+
+        await new RollDiceCommand(console, roll: (_, _) => 1).ExecuteAsync();
+
+        Assert.Contains("#4", console.Output); // 4 throws shown directly
     }
 }
