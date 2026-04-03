@@ -1,0 +1,8 @@
+- Follow the Conventional Commits format: `type[(scope)]: short description`
+- Valid types: `feat`, `fix`, `perf`, `refactor`, `test`, `chore`, `docs`, `style`, `ci`, `revert`
+- Append `!` after the type (e.g. `feat!:`) or add a `BREAKING CHANGE:` footer for breaking changes
+- Use the imperative mood ("add", not "added" or "adds")
+- Keep the first line at or under 72 characters
+- Do not end the description with a period
+- Separate the body from the subject with a blank line
+- Reference issues in the footer using `Closes #N` or `Fixes #N`
