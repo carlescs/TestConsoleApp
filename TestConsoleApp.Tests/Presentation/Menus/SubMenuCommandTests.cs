@@ -126,7 +126,9 @@ public sealed class SubMenuCommandTests
         IMenuInteraction? interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
             .Returns(command, (IMenuCommand?)null);
-        var subMenu = new SubMenuCommand("Test", [command], interaction);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        var subMenu = new SubMenuCommand("Test", [command], interaction, console);
 
         await subMenu.ExecuteAsync();
 
@@ -140,7 +142,11 @@ public sealed class SubMenuCommandTests
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
             .Returns(command, command, command, null);
-        var subMenu = new SubMenuCommand("Test", [command], interaction);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        console.Input.PushKey(ConsoleKey.Enter);
+        console.Input.PushKey(ConsoleKey.Enter);
+        var subMenu = new SubMenuCommand("Test", [command], interaction, console);
 
         await subMenu.ExecuteAsync();
 
@@ -183,7 +189,9 @@ public sealed class SubMenuCommandTests
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
             .Returns(command, command);
-        var subMenu = new SubMenuCommand("Test", [command], interaction);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        var subMenu = new SubMenuCommand("Test", [command], interaction, console);
 
         await subMenu.ExecuteAsync(cts.Token);
 
@@ -202,7 +210,9 @@ public sealed class SubMenuCommandTests
         var interaction = Substitute.For<IMenuInteraction>();
         interaction.Show(Arg.Any<string>(), Arg.Any<IReadOnlyList<IMenuCommand>>(), Arg.Any<string>(), Arg.Any<Action?>())
             .Returns(command, (IMenuCommand?)null);
-        var subMenu = new SubMenuCommand("Test", [command], interaction);
+        var console = new Spectre.Console.Testing.TestConsole();
+        console.Input.PushKey(ConsoleKey.Enter);
+        var subMenu = new SubMenuCommand("Test", [command], interaction, console);
 
         await subMenu.ExecuteAsync(cts.Token);
 

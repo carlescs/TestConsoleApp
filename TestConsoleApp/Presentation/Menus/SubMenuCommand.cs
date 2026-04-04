@@ -1,3 +1,4 @@
+using Spectre.Console;
 using TestConsoleApp.Application.Abstractions;
 
 namespace TestConsoleApp.Presentation.Menus;
@@ -10,17 +11,19 @@ public sealed class SubMenuCommand : IMenuCommand
 {
     private const string BackOption = "Back";
     private readonly IMenuInteraction _interaction;
+    private readonly IAnsiConsole _console;
 
     /// <param name="title">The display title shown as the menu heading and in parent menus.</param>
     /// <param name="commands">The child commands available within this submenu.</param>
     public SubMenuCommand(string title, IReadOnlyList<IMenuCommand> commands)
         : this(title, commands, DefaultMenuInteraction.Instance) { }
 
-    internal SubMenuCommand(string title, IReadOnlyList<IMenuCommand> commands, IMenuInteraction interaction)
+    internal SubMenuCommand(string title, IReadOnlyList<IMenuCommand> commands, IMenuInteraction interaction, IAnsiConsole? console = null)
     {
         Title = title;
         ChildCommands = commands;
         _interaction = interaction;
+        _console = console ?? AnsiConsole.Console;
     }
 
     /// <inheritdoc/>
@@ -39,6 +42,8 @@ public sealed class SubMenuCommand : IMenuCommand
                 break;
 
             await command.ExecuteAsync(cancellationToken);
+            _console.MarkupLine("\n[dim]Press any key to continue...[/]");
+            _console.Input.ReadKey(intercept: true);
         }
     }
 }
