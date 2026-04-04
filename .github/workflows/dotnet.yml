@@ -41,6 +41,32 @@ jobs:
     - name: Build
       run: dotnet build --no-restore -c Release
 
+    - name: Upload build output
+      uses: actions/upload-artifact@v6
+      with:
+        name: build-output
+        path: |
+          **/bin/Release
+          **/obj
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Download build output
+      uses: actions/download-artifact@v4
+      with:
+        name: build-output
+        path: .  # Restore artifact into workspace root, preserving bin/obj directory structure
+
     - name: Test
       run: dotnet test --no-build --verbosity normal -c Release --collect:"XPlat Code Coverage" --results-directory ./coverage
 
@@ -58,12 +84,28 @@ jobs:
         name: coverage-report
         path: ./coverage/report
 
+  publish:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0  # Required for MinVer to walk git history and find version tags
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
     - name: Pack
-      if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
       run: dotnet pack TestConsoleApp/TestConsoleApp.csproj --no-restore -c Release -o ./artifacts
 
     - name: Push to GitHub Packages
-      if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
       run: >
         dotnet nuget push ./artifacts/*.nupkg
         --source "https://nuget.pkg.github.com/carlescs/index.json"
