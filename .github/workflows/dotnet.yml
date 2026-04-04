@@ -67,6 +67,9 @@ jobs:
         name: build-output
         path: .  # Restore artifact into workspace root, preserving bin/obj directory structure
 
+    - name: Restore dependencies
+      run: dotnet restore
+
     - name: Test
       run: dotnet test --no-build --verbosity normal -c Release --collect:"XPlat Code Coverage" --results-directory ./coverage
 
